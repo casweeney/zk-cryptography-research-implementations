@@ -36,11 +36,28 @@ fn add_polynomials(polynomial1: &Vec<(u32, u32)>, polynomial2: &Vec<(u32, u32)>)
     let mut resolved_polynomial = polynomial1.clone();
 
     // merge both polynomials into one vector
-    resolved_polynomial.extend(polynomial2.clone());
+    resolved_polynomial.extend(polynomial2);
 
     // resolve polynomials by adding the coefficients with same exponent(power)
     simplify_terms(&mut resolved_polynomial);
 
+    resolved_polynomial
+}
+
+fn multiply_polynomials(polynomial1: &Vec<(u32, u32)>, polynomial2: &Vec<(u32, u32)>) -> Vec<(u32, u32)> {
+    let mut resolved_polynomial = Vec::new();
+    
+    for (coefficient1, exponent1) in polynomial1 {
+        for (coefficient2, exponent2) in polynomial2 {
+            // multiply coefficients, add exponents
+            let coef = coefficient1.wrapping_mul(*coefficient2);
+            let exp = exponent1.wrapping_add(*exponent2);
+            resolved_polynomial.push((coef, exp));
+        }
+    }
+    
+    // combine like terms
+    simplify_terms(&mut resolved_polynomial);
     resolved_polynomial
 }
 
@@ -60,11 +77,11 @@ fn simplify_terms(terms: &mut Vec<(u32, u32)>) {
     }
     
     // remove terms with zero coefficients
-    terms.retain(|&(c, _)| c != 0);
+    terms.retain(|&(coef, _)| coef != 0);
 }
 
 fn main() {
-    let set_of_points = vec!((2,1), (5,0));
+    let set_of_points = vec!((3,2),(2,1), (5,0));
     let evaluated_at = 2;
     let polynomial = UnivariatePolynomialSparsed::new(set_of_points.clone());
 
@@ -74,5 +91,6 @@ fn main() {
     
     println!("Degree of polynomial = {}", polynomial.degree());
     println!("The polynomial of points {:?} evaluated at value {} = {}", set_of_points, evaluated_at, polynomial.evaluate(evaluated_at));
-    println!("Polynomial added: {:?}", add_polynomials(&p1, &p2));
+    println!("Polynomials added: {:?}", add_polynomials(&p1, &p2));
+    println!("Polynomials multiplied: {:?}", multiply_polynomials(&p1, &p2));
 }
