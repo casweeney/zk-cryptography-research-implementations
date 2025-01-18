@@ -1,4 +1,4 @@
-use univariate_interpolation::{UnivariatePolynomial};
+use univariate_interpolation::{UnivariatePolynomial, add_polynomials};
 
 fn main() {
     let set_of_points = vec![0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0];
@@ -10,5 +10,5 @@ fn main() {
 
     println!("Degree of polynomial = {}", polynomial.degree());
     println!("The polynomial {:?} evaluated at {} = {}", set_of_points, evaluation_value, polynomial.evaluate_advanced(evaluation_value));
-    // println!("Larger poly is {:?}", add_polynomials(p1, p2));
+    println!("Larger poly is {:?}", add_polynomials(p1, p2));
 }

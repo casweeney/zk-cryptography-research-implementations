@@ -53,13 +53,23 @@ fn multiply_polynomials() -> UnivariatePolynomial {
 }
 
 pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
-    let larger_polynomial = if left.len() > right.len() {
-        left
+    let mut summed_polynomial: Vec<f64> = Vec::new();
+
+    let (larger_polynomial, smaller_polynomial) = if left.len() > right.len() {
+        (left, right)
     } else {
-        right
+        (right, left)
     };
 
-    for i in larger_polynomial.iter().zip()
+    for (exp, coeff) in larger_polynomial.iter().enumerate() {
+        if exp < smaller_polynomial.len() {
+            summed_polynomial.push(coeff + smaller_polynomial[exp]);
+        } else {
+            summed_polynomial.push(*coeff);
+        }
+    }
+
+    summed_polynomial
 }
 
 #[cfg(test)]
