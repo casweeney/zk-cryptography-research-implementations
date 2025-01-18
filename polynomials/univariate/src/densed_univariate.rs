@@ -67,6 +67,7 @@ impl DensedUnivariatePolynomial {
 }
 
 fn lagrange_basis(y_point: f64, focus_x_point: f64, interpolating_set: Vec<f64>) -> Vec<f64> {
+    // numerator
     let mut numerator = vec![1.0];
 
     // (x-1)(x-2) => [1, -1][1, -2] => Reverse it based on index => [-1, 1][-2, 1]
@@ -77,6 +78,7 @@ fn lagrange_basis(y_point: f64, focus_x_point: f64, interpolating_set: Vec<f64>)
         }
     }
 
+    // denominator
     let univariate_poly: DensedUnivariatePolynomial = DensedUnivariatePolynomial::new(numerator.clone());
     let denominator = univariate_poly.evaluate(focus_x_point);
 
