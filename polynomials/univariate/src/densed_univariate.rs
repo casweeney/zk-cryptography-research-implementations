@@ -1,8 +1,8 @@
-pub struct UnivariatePolynomial {
+pub struct DensedUnivariatePolynomial {
     coefficients: Vec<f64>
 }
 
-impl UnivariatePolynomial {
+impl DensedUnivariatePolynomial {
     pub fn new(points: Vec<f64>) -> Self {
         Self {
             coefficients: points
@@ -39,16 +39,16 @@ impl UnivariatePolynomial {
         result
     }
 
-    pub fn interpolate(x_values: Vec<f64>, y_values: Vec<f64>) -> UnivariatePolynomial {
+    pub fn interpolate(x_values: Vec<f64>, y_values: Vec<f64>) -> DensedUnivariatePolynomial {
         todo!()
     }
 }
 
-fn lagrange_basis(interpolating_set: Vec<f64>) -> UnivariatePolynomial {
+fn lagrange_basis(interpolating_set: Vec<f64>) -> DensedUnivariatePolynomial {
     todo!()
 }
 
-fn multiply_polynomials() -> UnivariatePolynomial {
+fn multiply_polynomials() -> Vec<f64> {
     todo!()
 }
 
@@ -76,9 +76,9 @@ pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
 mod tests {
     use super::*;
 
-    fn test_setup() -> UnivariatePolynomial {
+    fn test_setup() -> DensedUnivariatePolynomial {
         let set_of_points = vec![0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0];
-        let polynomial = UnivariatePolynomial::new(set_of_points.clone());
+        let polynomial = DensedUnivariatePolynomial::new(set_of_points.clone());
 
         polynomial
     }
@@ -95,5 +95,13 @@ mod tests {
         let evaluation_value = 2.0;
 
         assert_eq!(polynomial.evaluate(evaluation_value), 392.0);
+    }
+
+    #[test]
+    fn test_polynomials_addition() {
+        let p1 = vec![5.0, 2.0, 5.0];
+        let p2 = vec![2.0, 1.0, 8.0, 10.0];
+
+        assert_eq!(add_polynomials(p1, p2), vec![7.0, 3.0, 13.0, 10.0]);
     }
 }
