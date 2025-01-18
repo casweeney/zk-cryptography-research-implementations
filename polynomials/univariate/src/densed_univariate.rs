@@ -192,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn test_interpolate() {
+    fn test_lagrange_interpolate() {
         let y_values = vec![2.0, 4.0, 10.0];
 
         assert_eq!(DensedUnivariatePolynomial::lagrange_interpolate(y_values).coefficients, vec![2.0, 0.0, 2.0]);
