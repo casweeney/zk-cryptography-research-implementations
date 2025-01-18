@@ -39,12 +39,26 @@ impl DensedUnivariatePolynomial {
         result
     }
 
-    pub fn interpolate(x_values: Vec<f64>, y_values: Vec<f64>) -> DensedUnivariatePolynomial {
-        todo!()
+    pub fn interpolate(y_values: Vec<f64>) -> DensedUnivariatePolynomial {
+        let mut final_interpolated_polynomial = vec![0.0];
+        let mut x_values: Vec<f64> = Vec::new();
+
+        for (x, _y) in y_values.iter().enumerate() {
+            x_values.push(x as f64);
+        }
+        
+        for (index, x_value) in x_values.iter().enumerate() {
+            let current_polynomial = lagrange_basis(y_values[index], *x_value, x_values.clone());
+            final_interpolated_polynomial = add_polynomials(final_interpolated_polynomial, current_polynomial)
+        }
+
+        DensedUnivariatePolynomial {
+            coefficients: final_interpolated_polynomial
+        }
     }
 }
 
-fn lagrange_basis(interpolating_set: Vec<f64>) -> DensedUnivariatePolynomial {
+fn lagrange_basis(y_point: f64, x_point: f64, interpolating_set: Vec<f64>) -> Vec<f64> {
     todo!()
 }
 
