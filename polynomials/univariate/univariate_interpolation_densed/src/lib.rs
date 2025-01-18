@@ -16,15 +16,27 @@ impl UnivariatePolynomial {
     pub fn evaluate(&self, value: f64) -> f64 {
         // using index as the exponent of the coefficients
         let mut index_counter = 0;
-        let mut sum = 0.0;
+        let mut result = 0.0;
         
-        for i in self.coefficients.iter() {
-            sum = sum + (i * value.powf(index_counter as f64));
+        for coeff in self.coefficients.iter() {
+            result += coeff * value.powf(index_counter as f64);
 
-            index_counter = index_counter + 1;
+            index_counter += 1;
         }
 
-        sum
+        result
+    }
+
+    pub fn evaluate_advanced(&self, value: f64) -> f64 {
+        let mut result = 0.0;
+
+        for (exp, coeff) in self.coefficients
+            .iter()
+            .enumerate() {
+                result += coeff * value.powf(exp as f64);
+            }
+
+        result
     }
 
     pub fn interpolate(x_values: Vec<f64>, y_values: Vec<f64>) -> UnivariatePolynomial {
@@ -40,6 +52,38 @@ fn multiply_polynomials() -> UnivariatePolynomial {
     todo!()
 }
 
-fn add_polynomials() -> UnivariatePolynomial {
-    todo!()
+pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
+    let larger_polynomial = if left.len() > right.len() {
+        left
+    } else {
+        right
+    };
+
+    for i in larger_polynomial.iter().zip()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_setup() -> UnivariatePolynomial {
+        let set_of_points = vec![0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0];
+        let polynomial = UnivariatePolynomial::new(set_of_points.clone());
+
+        polynomial
+    }
+
+    #[test]
+    fn test_degree() {
+        let polynomial = test_setup();
+        assert_eq!(polynomial.degree(), 7);
+    }
+
+    #[test]
+    fn test_evaluation() {
+        let polynomial = test_setup();
+        let evaluation_value = 2.0;
+
+        assert_eq!(polynomial.evaluate(evaluation_value), 392.0);
+    }
 }
