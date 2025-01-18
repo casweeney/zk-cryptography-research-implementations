@@ -16,7 +16,7 @@ fn main() {
 
     let mut y_values: Vec<f64> = Vec::new();
 
-    for (index, x) in x_values.iter().enumerate() {
+    for (index, _x) in x_values.iter().enumerate() {
         y_values.push(p2[index])
     }
 
