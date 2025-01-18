@@ -48,8 +48,23 @@ fn lagrange_basis(interpolating_set: Vec<f64>) -> DensedUnivariatePolynomial {
     todo!()
 }
 
-fn multiply_polynomials() -> Vec<f64> {
-    todo!()
+pub fn multiply_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
+    let mut polynomial_product = vec![0.0; (left.len() + right.len()) - 1];
+
+    // We are using index as the power
+    // for left_index in 0..left.len() {
+    //     for right_index in 0..right.len() {
+    //         polynomial_product[left_index + right_index] += left[left_index] * right[right_index];
+    //     }
+    // }
+
+    for (left_index, left_coeff) in left.iter().enumerate(){
+        for (right_index, right_coeff) in right.iter().enumerate() {
+            polynomial_product[left_index + right_index] += left_coeff * right_coeff;
+        }
+    }
+
+    polynomial_product
 }
 
 pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
@@ -98,10 +113,18 @@ mod tests {
     }
 
     #[test]
-    fn test_polynomials_addition() {
+    fn test_add_polynomials() {
         let p1 = vec![5.0, 2.0, 5.0];
         let p2 = vec![2.0, 1.0, 8.0, 10.0];
 
         assert_eq!(add_polynomials(p1, p2), vec![7.0, 3.0, 13.0, 10.0]);
+    }
+
+    #[test]
+    fn test_multiply_polynomials() {
+        let p1 = vec![5.0, 0.0, 2.0];
+        let p2 = vec![6.0, 2.0];
+
+        assert_eq!(multiply_polynomials(p1, p2), vec![30.0, 10.0, 12.0, 4.0]);
     }
 }
