@@ -1,6 +1,7 @@
 // if f(0) = 17 => (0,17) Our secret is 17
 // Let's assume we got other random points for x,y as (24), (35), (40) => degree = 3
 //                                       0   1   2   3
+//                                       |   |   |   |
 // Now we have the following y_values = 17, 24, 35, 40
 
 // Using the polynomial, we can generate 10 extra x_values
@@ -8,7 +9,8 @@
 // Interpolate them to get a polynomial
 // Then we evaluate the polynomial at f(0), we are expected to get back the secret (17)
 
-//share(secret, threshold, number_shares)
+// shares(secret, threshold, number_shares) -> Vec<F> => shares
+// recover_secret(shares) -> F => secret
 
 use univariate::densed_univariate::DensedUnivariatePolynomial;
 use ark_ff::PrimeField;
