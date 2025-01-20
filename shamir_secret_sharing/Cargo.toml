@@ -1,9 +1,10 @@
 [package]
-name = "univariate"
+name = "shamir_secret_sharing"
 version = "0.1.0"
 edition = "2021"
-path = "src/lib.rs"
 
 [dependencies]
 ark-bn254 = "0.5.0"
 ark-ff = "0.5.0"
+rand = "0.8.5"
+univariate = {path = "../polynomials/univariate"}

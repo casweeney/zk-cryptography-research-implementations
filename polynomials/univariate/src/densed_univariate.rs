@@ -46,14 +46,14 @@ impl <F: PrimeField>DensedUnivariatePolynomial<F> {
     /// We can either take in two arguments: x_values and y_values,
     /// or we can generate our x_values from the given y_values
     /// Passing x_values will make our function run faster because it will avoid the first loop to get x_values
-    pub fn lagrange_interpolate(y_values: Vec<F>) -> DensedUnivariatePolynomial<F> {
+    pub fn lagrange_interpolate(x_values: Vec<F>, y_values: Vec<F>) -> DensedUnivariatePolynomial<F> {
         let mut final_interpolated_polynomial = vec![F::zero()]; //any value added to zero, gives you that value
-        let mut x_values: Vec<F> = Vec::new();
+        // let mut x_values: Vec<F> = Vec::new();
 
         // Generating x_values from the given y_values
-        for (x, _y) in y_values.iter().enumerate() {
-            x_values.push(F::from(x as u64));
-        }
+        // for (x, _y) in y_values.iter().enumerate() {
+        //     x_values.push(F::from(x as u64));
+        // }
         
         // Using the generated x_values to derive the lagrange basis at each x_point and corresponding y_point, 
         // passing in the interpolating set, which is the x_values.
@@ -199,8 +199,9 @@ mod tests {
 
     #[test]
     fn test_lagrange_interpolate() {
+        let x_values = vec![Fq::from(0), Fq::from(1), Fq::from(2)];
         let y_values = vec![Fq::from(2), Fq::from(4), Fq::from(10)];
 
-        assert_eq!(DensedUnivariatePolynomial::lagrange_interpolate(y_values).coefficients, vec![Fq::from(2), Fq::from(0), Fq::from(2)]);
+        assert_eq!(DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values).coefficients, vec![Fq::from(2), Fq::from(0), Fq::from(2)]);
     }
 }
