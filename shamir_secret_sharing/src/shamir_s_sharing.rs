@@ -1,4 +1,4 @@
-use univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
 use ark_ff::PrimeField;
 
 // In this implementation, given (0, 17) as the secret, evaluated at 0

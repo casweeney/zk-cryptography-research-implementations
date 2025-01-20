@@ -1,4 +1,4 @@
-use univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
 use ark_ff::PrimeField;
 
 // if f(0) = 17 => (0,17) Our secret is 17

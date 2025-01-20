@@ -317,6 +317,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
+name = "polynomials"
+version = "0.1.0"
+dependencies = [
+ "ark-bn254",
+ "ark-ff",
+]
+
+[[package]]
 name = "ppv-lite86"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -379,8 +387,8 @@ version = "0.1.0"
 dependencies = [
  "ark-bn254",
  "ark-ff",
+ "polynomials",
  "rand",
- "univariate",
 ]
 
 [[package]]
@@ -405,14 +413,6 @@ name = "unicode-ident"
 version = "1.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "adb9e6ca4f869e1180728b7950e35922a7fc6397f7b641499e8f3ef06e50dc83"
-
-[[package]]
-name = "univariate"
-version = "0.1.0"
-dependencies = [
- "ark-bn254",
- "ark-ff",
-]
 
 [[package]]
 name = "version_check"

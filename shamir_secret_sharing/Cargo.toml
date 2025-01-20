@@ -7,4 +7,4 @@ edition = "2021"
 ark-bn254 = "0.5.0"
 ark-ff = "0.5.0"
 rand = "0.8.5"
-univariate = {path = "../polynomials/univariate"}
+polynomials = {path = "../polynomials"}
