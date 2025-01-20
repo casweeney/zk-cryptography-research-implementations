@@ -1,9 +1,12 @@
-pub struct DensedUnivariatePolynomial {
-    coefficients: Vec<f64>
+use ark_ff::PrimeField;
+
+#[derive(Debug)]
+pub struct DensedUnivariatePolynomial<F: PrimeField> {
+    coefficients: Vec<F>
 }
 
-impl DensedUnivariatePolynomial {
-    pub fn new(points: Vec<f64>) -> Self {
+impl <F: PrimeField>DensedUnivariatePolynomial<F> {
+    pub fn new(points: Vec<F>) -> Self {
         Self {
             coefficients: points
         }
@@ -13,13 +16,13 @@ impl DensedUnivariatePolynomial {
         self.coefficients.len() as u32 - 1
     }
 
-    pub fn evaluate(&self, value: f64) -> f64 {
+    pub fn evaluate(&self, value: F) -> F {
         // using index as the exponent of the coefficients
         let mut index_counter = 0;
-        let mut result = 0.0;
+        let mut result = F::zero();
         
         for coeff in self.coefficients.iter() {
-            result += coeff * value.powf(index_counter as f64);
+            result += *coeff * value.pow([index_counter]);
 
             index_counter += 1;
         }
@@ -27,13 +30,13 @@ impl DensedUnivariatePolynomial {
         result
     }
 
-    pub fn evaluate_advanced(&self, value: f64) -> f64 {
-        let mut result = 0.0;
+    pub fn evaluate_advanced(&self, value: F) -> F {
+        let mut result = F::zero();
 
         for (exp, coeff) in self.coefficients
             .iter()
             .enumerate() {
-                result += coeff * value.powf(exp as f64);
+                result += *coeff * value.pow([exp as u64]);
             }
 
         result
@@ -43,13 +46,13 @@ impl DensedUnivariatePolynomial {
     /// We can either take in two arguments: x_values and y_values,
     /// or we can generate our x_values from the given y_values
     /// Passing x_values will make our function run faster because it will avoid the first loop to get x_values
-    pub fn lagrange_interpolate(y_values: Vec<f64>) -> DensedUnivariatePolynomial {
-        let mut final_interpolated_polynomial = vec![0.0]; //any value added to zero, gives you that value
-        let mut x_values: Vec<f64> = Vec::new();
+    pub fn lagrange_interpolate(y_values: Vec<F>) -> DensedUnivariatePolynomial<F> {
+        let mut final_interpolated_polynomial = vec![F::zero()]; //any value added to zero, gives you that value
+        let mut x_values: Vec<F> = Vec::new();
 
         // Generating x_values from the given y_values
         for (x, _y) in y_values.iter().enumerate() {
-            x_values.push(x as f64);
+            x_values.push(F::from(x as u64));
         }
         
         // Using the generated x_values to derive the lagrange basis at each x_point and corresponding y_point, 
@@ -66,20 +69,20 @@ impl DensedUnivariatePolynomial {
     }
 }
 
-fn lagrange_basis(y_point: f64, focus_x_point: f64, interpolating_set: Vec<f64>) -> Vec<f64> {
+fn lagrange_basis<F: PrimeField>(y_point: F, focus_x_point: F, interpolating_set: Vec<F>) -> Vec<F> {
     // numerator
-    let mut numerator = vec![1.0];
+    let mut numerator = vec![F::one()];
 
     // (x-1)(x-2) => [1, -1][1, -2] => Reverse it based on index => [-1, 1][-2, 1]
     // Notice that in the reversed for, 1 is always constant, and the first values in the interpolating set are always negative
     for x in interpolating_set.iter() {
         if *x != focus_x_point {
-            numerator = multiply_polynomials(numerator, vec![- *x, 1.0]);
+            numerator = multiply_polynomials(numerator, vec![- *x, F::one()]);
         }
     }
 
     // denominator
-    let univariate_poly: DensedUnivariatePolynomial = DensedUnivariatePolynomial::new(numerator.clone());
+    let univariate_poly: DensedUnivariatePolynomial<F> = DensedUnivariatePolynomial::new(numerator.clone());
     let denominator = univariate_poly.evaluate(focus_x_point);
 
     // numerator/denominator is the same this as (1/denominator) * numerator
@@ -89,8 +92,8 @@ fn lagrange_basis(y_point: f64, focus_x_point: f64, interpolating_set: Vec<f64>)
     interpolated_polynomial
 }
 
-fn scalar_mul(scalar: f64, polynomial: Vec<f64>) -> Vec<f64> {
-    let mut result_polynomial: Vec<f64> = Vec::new();
+fn scalar_mul<F: PrimeField>(scalar: F, polynomial: Vec<F>) -> Vec<F> {
+    let mut result_polynomial: Vec<F> = Vec::new();
 
     for coeff in polynomial.iter() {
         result_polynomial.push(scalar * coeff);
@@ -102,12 +105,12 @@ fn scalar_mul(scalar: f64, polynomial: Vec<f64>) -> Vec<f64> {
 /// We are using index as the power/exponent
 /// Then we use the sum of the powers of the two polynomials that are multiplying each other
 /// as the index of resulting polynomial = polynomial_product[pow1 + pow2] = coeff1 * coeff2
-pub fn multiply_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
+pub fn multiply_polynomials<F: PrimeField>(left: Vec<F>, right: Vec<F>) -> Vec<F> {
     //  0 1 1     0 1 -> powers(exponents)
     //  | | |     | |
     // [5,0,2] * [6,2] -> Coefficients
 
-    let mut polynomial_product = vec![0.0; (left.len() + right.len()) - 1];
+    let mut polynomial_product = vec![F::zero(); (left.len() + right.len()) - 1];
 
     // for left_index in 0..left.len() {
     //     for right_index in 0..right.len() {
@@ -117,15 +120,15 @@ pub fn multiply_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
 
     for (left_index, left_coeff) in left.iter().enumerate(){
         for (right_index, right_coeff) in right.iter().enumerate() {
-            polynomial_product[left_index + right_index] += left_coeff * right_coeff;
+            polynomial_product[left_index + right_index] += *left_coeff * *right_coeff;
         }
     }
 
     polynomial_product
 }
 
-pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
-    let mut summed_polynomial: Vec<f64> = Vec::new();
+pub fn add_polynomials<F: PrimeField>(left: Vec<F>, right: Vec<F>) -> Vec<F> {
+    let mut summed_polynomial: Vec<F> = Vec::new();
 
     let (larger_polynomial, smaller_polynomial) = if left.len() > right.len() {
         (left, right)
@@ -135,7 +138,7 @@ pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
 
     for (exp, coeff) in larger_polynomial.iter().enumerate() {
         if exp < smaller_polynomial.len() {
-            summed_polynomial.push(coeff + smaller_polynomial[exp]);
+            summed_polynomial.push(*coeff + smaller_polynomial[exp]);
         } else {
             summed_polynomial.push(*coeff);
         }
@@ -147,9 +150,10 @@ pub fn add_polynomials(left: Vec<f64>, right: Vec<f64>) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_bn254::Fq;
 
-    fn test_setup() -> DensedUnivariatePolynomial {
-        let set_of_points = vec![0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 3.0];
+    fn test_setup() -> DensedUnivariatePolynomial<Fq> {
+        let set_of_points = vec![Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)];
         let polynomial = DensedUnivariatePolynomial::new(set_of_points.clone());
 
         polynomial
@@ -164,39 +168,39 @@ mod tests {
     #[test]
     fn test_evaluation() {
         let polynomial = test_setup();
-        let evaluation_value = 2.0;
+        let evaluation_value = Fq::from(2);
 
-        assert_eq!(polynomial.evaluate(evaluation_value), 392.0);
+        assert_eq!(polynomial.evaluate(evaluation_value), Fq::from(392));
     }
 
     #[test]
     fn test_evaluation_advanced() {
         let polynomial = test_setup();
-        let evaluation_value = 2.0;
+        let evaluation_value = Fq::from(2);
 
-        assert_eq!(polynomial.evaluate_advanced(evaluation_value), 392.0);
+        assert_eq!(polynomial.evaluate_advanced(evaluation_value), Fq::from(392));
     }
 
     #[test]
     fn test_add_polynomials() {
-        let p1 = vec![5.0, 2.0, 5.0];
-        let p2 = vec![2.0, 1.0, 8.0, 10.0];
+        let p1 = vec![Fq::from(5), Fq::from(2), Fq::from(5)];
+        let p2 = vec![Fq::from(2), Fq::from(1), Fq::from(8), Fq::from(10)];
 
-        assert_eq!(add_polynomials(p1, p2), vec![7.0, 3.0, 13.0, 10.0]);
+        assert_eq!(add_polynomials(p1, p2), vec![Fq::from(7), Fq::from(3), Fq::from(13), Fq::from(10)]);
     }
 
     #[test]
     fn test_multiply_polynomials() {
-        let p1 = vec![5.0, 0.0, 2.0];
-        let p2 = vec![6.0, 2.0];
+        let p1 = vec![Fq::from(5), Fq::from(0), Fq::from(2)];
+        let p2 = vec![Fq::from(6), Fq::from(2)];
 
-        assert_eq!(multiply_polynomials(p1, p2), vec![30.0, 10.0, 12.0, 4.0]);
+        assert_eq!(multiply_polynomials(p1, p2), vec![Fq::from(30), Fq::from(10), Fq::from(12), Fq::from(4)]);
     }
 
     #[test]
     fn test_lagrange_interpolate() {
-        let y_values = vec![2.0, 4.0, 10.0];
+        let y_values = vec![Fq::from(2), Fq::from(4), Fq::from(10)];
 
-        assert_eq!(DensedUnivariatePolynomial::lagrange_interpolate(y_values).coefficients, vec![2.0, 0.0, 2.0]);
+        assert_eq!(DensedUnivariatePolynomial::lagrange_interpolate(y_values).coefficients, vec![Fq::from(2), Fq::from(0), Fq::from(2)]);
     }
 }
