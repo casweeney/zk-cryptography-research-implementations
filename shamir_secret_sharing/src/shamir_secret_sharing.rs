@@ -10,7 +10,7 @@ use ark_ff::PrimeField;
 // We will use the y_values as coefficients to create a new polynomial
 
 // Using the polynomial, we can generate 10 extra x_values, assuming 10 is the number of shares we intend to get
-// From the newly generated 10 x_values, evaluate the polynomial at each those x_values to get the shares
+// From the newly generated 10 x_values, evaluate the polynomial at each those x_values to get the shares: shares = (x_values, evaluation_results)
 // When you Interpolate any 4 of the shares, you will should get back a polynomial which when evaluated at value = 0, you will get back the secret (17)
 
 // shares(secret, threshold, number_shares) -> Vec<F> => shares
