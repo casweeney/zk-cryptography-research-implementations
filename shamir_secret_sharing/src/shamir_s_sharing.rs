@@ -11,23 +11,27 @@ use ark_ff::PrimeField;
 /// Added password to serve as an extra level of security.
 /// The password will be the point at which x will be evaluated to get the secret.
 pub fn s_shares<F: PrimeField>(secret: F, password: u64, threshold: u64, number_shares: u64) -> Vec<(F, F)> {
-    let mut x_values = vec![F::from(password)];
-    let mut y_values = vec![secret];
-
     let mut rng = rand::thread_rng();
     let mut shares: Vec<(F, F)> = Vec::new();
 
-    for i in password + 1..threshold {
-        x_values.push(F::from(i));
-        y_values.push(F::rand(&mut rng));
-    }
+    loop {
+        let mut x_values = vec![F::from(password)];
+        let mut y_values = vec![secret];
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
-
-    // todo!() : We need a while loop to regenerate the random numbers if the condition below fails 
-    if polynomial.degree() as u64 == threshold - 1 {
-        for i in password + 1..number_shares {
-            shares.push((F::from(i), polynomial.evaluate(F::from(i))))
+        for i in 1..threshold {
+            x_values.push(F::from(i));
+            y_values.push(F::rand(&mut rng));
+        }
+    
+        let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
+    
+        // Checking if we have a valid polynomial of the correct degree
+        // If we do, the loop breaks, else the loop continues and generates a new polynomial with new random points
+        if polynomial.degree() as u64 == threshold - 1 {
+            for i in 1..number_shares {
+                shares.push((F::from(i), polynomial.evaluate(F::from(i))))
+            }
+            break;
         }
     }
 
