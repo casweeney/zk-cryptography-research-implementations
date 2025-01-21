@@ -48,6 +48,10 @@ mod test {
 
     // #[test]
     // fn test_evaluation_points_outside() {
+    //     let eval_at_8 = evaluation(Fq::from(8));
+
+    //     println!("Evaluation at 8 = {}", eval_at_8);
+
     //     for x in 8..=10 {
     //         let value = Fq::from(x);
             
