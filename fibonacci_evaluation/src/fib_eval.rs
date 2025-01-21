@@ -16,18 +16,47 @@ mod test {
     use ark_bn254::Fq;
 
     #[test]
-    fn test_evaluation() {
+    fn test_evaluation_points_within() {
+        // Given that:
         // f(x) => f(4) => 5
-        let value = Fq::from(4);
 
+        // From the fibonacci sequence, we concluded that:
         // f(x) => f(x-1) + f(x-2) => 5
         // f(x-1) => f(3)
         // f(x-2) => f(2)
 
-        let value_sub_one = value - Fq::from(1);
-        let value_sub_two = value - Fq::from(2);
+        // Let's test this to be sure
 
-        assert_eq!(evaluation(value), Fq::from(5));
-        assert_eq!(evaluation(value_sub_one) + evaluation(value_sub_two), Fq::from(5));
+        for x in 1..=7 {
+            let value = Fq::from(x);
+            
+            if x > 2 {
+                let value_sub_one = value - Fq::from(1);
+                let value_sub_two = value - Fq::from(2);
+
+                assert_eq!(evaluation(value), evaluation(value_sub_one) + evaluation(value_sub_two));
+            }
+        }
     }
+
+    #[test]
+    fn test_evaluation_at_7() {
+        // We want to check to be sure that f(7) => 21
+
+        assert_eq!(evaluation(Fq::from(7)), Fq::from(21));
+    }
+
+    // #[test]
+    // fn test_evaluation_points_outside() {
+    //     for x in 8..=10 {
+    //         let value = Fq::from(x);
+            
+    //         if x > 2 {
+    //             let value_sub_one = value - Fq::from(1);
+    //             let value_sub_two = value - Fq::from(2);
+
+    //             assert_eq!(evaluation(value), evaluation(value_sub_one) + evaluation(value_sub_two));
+    //         }
+    //     }
+    // }
 }
