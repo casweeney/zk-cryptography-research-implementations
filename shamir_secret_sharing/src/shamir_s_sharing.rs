@@ -38,7 +38,7 @@ pub fn s_shares<F: PrimeField>(secret: F, password: u64, threshold: u64, number_
     shares
 }
 
-pub fn s_recover_secret<F: PrimeField>(shares: Vec<(F, F)>) -> F {
+pub fn s_recover_secret<F: PrimeField>(shares: Vec<(F, F)>, password: u64) -> F {
     let mut x_values: Vec<F> = Vec::new();
     let mut y_values: Vec<F> = Vec::new();
 
@@ -50,7 +50,7 @@ pub fn s_recover_secret<F: PrimeField>(shares: Vec<(F, F)>) -> F {
 
     let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
 
-    let secret = polynomial.evaluate(F::from(0));
+    let secret = polynomial.evaluate(F::from(password));
 
     secret
 }
@@ -69,7 +69,7 @@ mod tests {
 
         let shares = s_shares(secret, password, threshold, number_of_shares);
 
-        let recovered_secret = s_recover_secret(shares);
+        let recovered_secret = s_recover_secret(shares, password);
 
         assert_eq!(recovered_secret, secret);
 
@@ -84,7 +84,7 @@ mod tests {
 
         let shares = s_shares(secret, password, threshold, number_of_shares);
 
-        let recovered_secret = s_recover_secret(shares);
+        let recovered_secret = s_recover_secret(shares, password);
 
         assert_ne!(recovered_secret, Fq::from(10));
 
