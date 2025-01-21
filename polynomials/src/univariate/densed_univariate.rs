@@ -6,9 +6,9 @@ pub struct DensedUnivariatePolynomial<F: PrimeField> {
 }
 
 impl <F: PrimeField>DensedUnivariatePolynomial<F> {
-    pub fn new(points: Vec<F>) -> Self {
+    pub fn new(coeffs: Vec<F>) -> Self {
         Self {
-            coefficients: points
+            coefficients: coeffs
         }
     }
 
