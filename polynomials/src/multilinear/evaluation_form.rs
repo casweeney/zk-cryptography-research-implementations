@@ -2,7 +2,6 @@ use ark_ff::PrimeField;
 
 // This function will receive a polynomial in it's evaluated form
 // That means the polynomial it will receive has already been evaluated over a boolean hypercube
-// 
 pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value: i32) -> Vec<i32> {
     let polynomial_size = polynomial.len();
     let expected_polynomial_size = polynomial_size / 2;
@@ -28,7 +27,6 @@ pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value:
             j + 1
         }
     }
-
 
     result_polynomial
 }
