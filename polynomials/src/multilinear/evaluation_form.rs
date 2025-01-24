@@ -1,5 +1,25 @@
 use ark_ff::PrimeField;
 
+struct MultilinearPolynomial {
+    evaluated_values: Vec<i32>,
+    number_of_variables: usize
+}
+
+impl MultilinearPolynomial {
+    pub fn new(evaluated_values: Vec<i32>) -> Self {
+        let number_of_variables = evaluated_values.len().ilog2() as usize;
+
+        Self {
+            evaluated_values,
+            number_of_variables
+        }
+    }
+
+    pub fn evaluate(&self, values: Vec<i32>) -> i32 {
+        todo!()
+    }
+}
+
 // This function will receive a polynomial in it's evaluated form
 // That means the polynomial it will receive has already been evaluated over a boolean hypercube
 pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value: i32) -> Vec<i32> {
@@ -11,13 +31,24 @@ pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value:
     let mut j = 0;
 
     while i < expected_polynomial_size {
-        // a b c
         let first_pair_value = polynomial[j];
+
+        // since the number of boolean hypercube evaluations for a polynomial with n number of variable is 2^n
+        // The number of variables, when given the evaluations: n = log2(polynomial length)
         let number_of_variables = polynomial.len().ilog2() as usize;
+
+        // 0 1 2 => evaluating variable for a = 0, b = 1, c = 2
+        // | | |
+        // a b c
+        // using evaluating_variable as variable index in boolean hypercube
         let power = number_of_variables - 1 - evaluating_variable;
         let second_pair_value = polynomial[j | (1 << power)];
 
-        result_polynomial.push(first_pair_value * (1 - value) + second_pair_value * value);
+        // using the formula: y1 + r(y2 - y1)
+        result_polynomial.push(first_pair_value + ((value * second_pair_value) - (value * first_pair_value)) );
+
+        // A shorter way to represent the above evaluation
+        // result_polynomial.push(first_pair_value * (1 - value) + second_pair_value * value);
 
         i += 1;
 
