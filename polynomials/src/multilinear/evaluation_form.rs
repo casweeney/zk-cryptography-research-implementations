@@ -1,42 +1,38 @@
 use ark_ff::PrimeField;
 
-struct MultilinearPolynomial {
-    evaluated_values: Vec<i32>,
-    number_of_variables: usize
+pub struct MultilinearPolynomial<F: PrimeField> {
+    evaluated_values: Vec<F>
 }
 
-impl MultilinearPolynomial {
-    pub fn new(evaluated_values: Vec<i32>) -> Self {
-        let number_of_variables = evaluated_values.len().ilog2() as usize;
-
+impl <F: PrimeField>MultilinearPolynomial<F> {
+    pub fn new(evaluated_values: Vec<F>) -> Self {
         Self {
-            evaluated_values,
-            number_of_variables
+            evaluated_values
         }
     }
-}
 
-// The evaluate function calls the partial evaluate multiple times
-pub fn evaluate(polynomial: Vec<i32>, values: Vec<i32>) -> i32 {
-    let mut r_polynomial = polynomial.clone();
-    let expected_number_of_partial_eval = values.len();
+    // The evaluate function calls the partial evaluate multiple times
+    pub fn evaluate(&self, values: Vec<F>) -> F {
+        let mut r_polynomial = self.evaluated_values.clone();
+        let expected_number_of_partial_eval = values.len();
 
-    let mut i = 0;
+        let mut i = 0;
 
-    while i < expected_number_of_partial_eval {
-        r_polynomial = partial_evaluate(&r_polynomial, 0, values[i]);
-        i += 1;
+        while i < expected_number_of_partial_eval {
+            r_polynomial = partial_evaluate(&r_polynomial, 0, values[i]);
+            i += 1;
+        }
+
+        r_polynomial[0]
     }
-
-    r_polynomial[0]
 }
 
 // This function will receive a polynomial in it's evaluated form
 // That means the polynomial it will receive has already been evaluated over a boolean hypercube
-pub fn partial_evaluate(polynomial: &Vec<i32>, evaluating_variable: usize, value: i32) -> Vec<i32> {
+pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable: usize, value: F) -> Vec<F> {
     let polynomial_size = polynomial.len();
     let expected_polynomial_size = polynomial_size / 2;
-    let mut result_polynomial: Vec<i32> = Vec::with_capacity(expected_polynomial_size);
+    let mut result_polynomial: Vec<F> = Vec::with_capacity(expected_polynomial_size);
 
     let mut i = 0;
     let mut j = 0;
@@ -77,23 +73,25 @@ pub fn partial_evaluate(polynomial: &Vec<i32>, evaluating_variable: usize, value
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_bn254::Fq;
 
     #[test]
     fn test_partial_evaluate() {
-        let polynomial = vec![0, 0, 3, 8];
+        let polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(8)];
 
-        assert_eq!(partial_evaluate(&polynomial, 0, 6), vec![18, 48]);
-        assert_eq!(partial_evaluate(&polynomial, 1, 2), vec![0, 13]);
+        assert_eq!(partial_evaluate(&polynomial, 0, Fq::from(6)), vec![Fq::from(18), Fq::from(48)]);
+        assert_eq!(partial_evaluate(&polynomial, 1, Fq::from(2)), vec![Fq::from(0), Fq::from(13)]);
 
-        let small_polynomial = vec![18, 48];
-        assert_eq!(partial_evaluate(&small_polynomial, 0, 2), vec![78]);
+        let small_polynomial = vec![Fq::from(18), Fq::from(48)];
+        assert_eq!(partial_evaluate(&small_polynomial, 0, Fq::from(2)), vec![Fq::from(78)]);
     }
 
     #[test]
     fn test_evaluate() {
-        let polynomial = vec![0, 0, 3, 8];
-        let values = vec![6, 2];
+        let evaluated_values = vec![Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(8)];
+        let polynomial = MultilinearPolynomial::new(evaluated_values);
+        let values = vec![Fq::from(6), Fq::from(2)];
 
-        assert_eq!(evaluate(polynomial, values), 78);
+        assert_eq!(polynomial.evaluate(values), Fq::from(78));
     }
 }
