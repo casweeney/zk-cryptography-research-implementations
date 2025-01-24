@@ -14,15 +14,26 @@ impl MultilinearPolynomial {
             number_of_variables
         }
     }
+}
 
-    pub fn evaluate(&self, values: Vec<i32>) -> i32 {
-        todo!()
+// The evaluate function calls the partial evaluate multiple times
+pub fn evaluate(polynomial: Vec<i32>, values: Vec<i32>) -> i32 {
+    let mut r_polynomial = polynomial.clone();
+    let expected_number_of_partial_eval = values.len();
+
+    let mut i = 0;
+
+    while i < expected_number_of_partial_eval {
+        r_polynomial = partial_evaluate(&r_polynomial, 0, values[i]);
+        i += 1;
     }
+
+    r_polynomial[0]
 }
 
 // This function will receive a polynomial in it's evaluated form
 // That means the polynomial it will receive has already been evaluated over a boolean hypercube
-pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value: i32) -> Vec<i32> {
+pub fn partial_evaluate(polynomial: &Vec<i32>, evaluating_variable: usize, value: i32) -> Vec<i32> {
     let polynomial_size = polynomial.len();
     let expected_polynomial_size = polynomial_size / 2;
     let mut result_polynomial: Vec<i32> = Vec::with_capacity(expected_polynomial_size);
@@ -52,10 +63,10 @@ pub fn partial_evaluate(polynomial: Vec<i32>, evaluating_variable: usize, value:
 
         i += 1;
 
-        j = if j + 1 % (1 << power) == 0 {
-            j + 1 + (1 << power)
+        if j + 1 % (1 << power) == 0 {
+            j = j + 1 + (1 << power)
         } else {
-            j + 1
+            j = j + 1
         }
     }
 
@@ -71,7 +82,18 @@ mod tests {
     fn test_partial_evaluate() {
         let polynomial = vec![0, 0, 3, 8];
 
-        assert_eq!(partial_evaluate(polynomial.clone(), 0, 6), vec![18, 48]);
-        assert_eq!(partial_evaluate(polynomial, 1, 2), vec![0, 13]);
+        assert_eq!(partial_evaluate(&polynomial, 0, 6), vec![18, 48]);
+        assert_eq!(partial_evaluate(&polynomial, 1, 2), vec![0, 13]);
+
+        let small_polynomial = vec![18, 48];
+        assert_eq!(partial_evaluate(&small_polynomial, 0, 2), vec![78]);
+    }
+
+    #[test]
+    fn test_evaluate() {
+        let polynomial = vec![0, 0, 3, 8];
+        let values = vec![6, 2];
+
+        assert_eq!(evaluate(polynomial, values), 78);
     }
 }
