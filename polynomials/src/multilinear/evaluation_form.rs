@@ -1,5 +1,8 @@
 use ark_ff::PrimeField;
 
+// This implementation of Multi linear interpolation uses an evaluation over the boolean hypercube
+// then the values from the boolean hypercube evaluation is used as the polynomial
+// which will be evaluated at a given variable values using partial evaluation
 pub struct MultilinearPolynomial<F: PrimeField> {
     evaluated_values: Vec<F>
 }
