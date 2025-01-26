@@ -41,7 +41,7 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
     let mut j = 0;
 
     while i < expected_polynomial_size {
-        let first_pair_value = polynomial[j];
+        let first_pair_value = polynomial[j]; // y1
 
         // since the number of boolean hypercube evaluations for a polynomial with n number of variable is 2^n
         // The number of variables, when given the evaluations: n = log2(polynomial length)
@@ -52,7 +52,7 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
         // a b c
         // using evaluating_variable as variable index in boolean hypercube
         let power = number_of_variables - 1 - evaluating_variable;
-        let second_pair_value = polynomial[j | (1 << power)];
+        let second_pair_value = polynomial[j | (1 << power)]; // y2
 
         // using the formula: y1 + r(y2 - y1)
         result_polynomial.push(first_pair_value + ((value * second_pair_value) - (value * first_pair_value)) );
@@ -62,6 +62,11 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
 
         i += 1;
 
+        // After pairing, we need to determine what our next y1 value, which will be used for pairing to get a y2
+        // To get the next y1, we first add 1 to the previous y1 and check if the modulo with the 2^power of the variable we are evaluating at is zero
+        // ie: (previous_y1 + 1) % 2^power
+        // If it is zero we jump by (previous_y1 + 1 + 2^power)
+        // If it is not zero, we jump by adding 1: (previous_y1 + 1)
         if j + 1 % (1 << power) == 0 {
             j = j + 1 + (1 << power)
         } else {
