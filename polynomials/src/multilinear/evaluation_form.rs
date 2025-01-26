@@ -67,10 +67,10 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
         // ie: (previous_y1 + 1) % 2^power
         // If it is zero we jump by (previous_y1 + 1 + 2^power)
         // If it is not zero, we jump by adding 1: (previous_y1 + 1)
-        if j + 1 % (1 << power) == 0 {
-            j = j + 1 + (1 << power)
+        j = if j + 1 % (1 << power) == 0 {
+            j + 1 + (1 << power)
         } else {
-            j = j + 1
+            j + 1
         }
     }
 
