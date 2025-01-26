@@ -52,6 +52,7 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
         // a b c
         // using evaluating_variable as variable index in boolean hypercube
         let power = number_of_variables - 1 - evaluating_variable;
+        
         let second_pair_value = polynomial[j | (1 << power)]; // y2
 
         // using the formula: y1 + r(y2 - y1)
@@ -67,7 +68,7 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
         // ie: (previous_y1 + 1) % 2^power
         // If it is zero we jump by (previous_y1 + 1 + 2^power)
         // If it is not zero, we jump by adding 1: (previous_y1 + 1)
-        j = if j + 1 % (1 << power) == 0 {
+        j = if (j + 1) % (1 << power) == 0 {
             j + 1 + (1 << power)
         } else {
             j + 1
@@ -93,8 +94,8 @@ mod tests {
         let small_polynomial = vec![Fq::from(18), Fq::from(48)];
         assert_eq!(partial_evaluate(&small_polynomial, 0, Fq::from(2)), vec![Fq::from(78)]);
 
-        // let bigger_polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(5)];
-        // assert_eq!(partial_evaluate(&bigger_polynomial, 2, Fq::from(3)), vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]);
+        let bigger_polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(5)];
+        assert_eq!(partial_evaluate(&bigger_polynomial, 2, Fq::from(3)), vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]);
     }
 
     #[test]
