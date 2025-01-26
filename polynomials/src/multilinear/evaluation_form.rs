@@ -92,6 +92,9 @@ mod tests {
 
         let small_polynomial = vec![Fq::from(18), Fq::from(48)];
         assert_eq!(partial_evaluate(&small_polynomial, 0, Fq::from(2)), vec![Fq::from(78)]);
+
+        // let bigger_polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(5)];
+        // assert_eq!(partial_evaluate(&bigger_polynomial, 2, Fq::from(3)), vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]);
     }
 
     #[test]
