@@ -55,10 +55,10 @@ pub fn partial_evaluate<F: PrimeField>(polynomial: &Vec<F>, evaluating_variable:
         let second_pair_value = polynomial[j | (1 << power)]; // y2
 
         // using the formula: y1 + r(y2 - y1)
-        result_polynomial.push(first_pair_value + ((value * second_pair_value) - (value * first_pair_value)) );
-
-        // A shorter way to represent the above evaluation
-        // result_polynomial.push(first_pair_value * (1 - value) + second_pair_value * value);
+        // y1 => first_pair_value
+        // y2 => second_pair_value
+        // r => value
+        result_polynomial.push(first_pair_value + (value * (second_pair_value - first_pair_value)));
 
         i += 1;
 
