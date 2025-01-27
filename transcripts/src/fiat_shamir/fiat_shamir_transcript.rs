@@ -1,4 +1,4 @@
-use sha3::{Digest, Keccak256};
+use sha3::{Keccak256, Digest};
 use crate::fiat_shamir::interface::FiatShamirTranscriptInterface;
 
 pub struct Transcript {
