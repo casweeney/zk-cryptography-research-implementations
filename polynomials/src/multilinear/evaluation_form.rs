@@ -1,8 +1,9 @@
-use ark_ff::PrimeField;
+use ark_ff::{PrimeField, BigInteger};
 
 // This implementation of Multi linear interpolation uses an evaluation over the boolean hypercube
 // then the values from the boolean hypercube evaluation is used as the polynomial
 // which will be evaluated at a given variable values using partial evaluation
+#[derive(Debug, Clone, PartialEq)]
 pub struct MultilinearPolynomial<F: PrimeField> {
     evaluated_values: Vec<F>
 }
@@ -27,6 +28,16 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
         }
 
         r_polynomial[0]
+    }
+
+    pub fn convert_to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        for value in &self.evaluated_values {
+            bytes.extend(value.into_bigint().to_bytes_be());
+        }
+
+        bytes
     }
 }
 
