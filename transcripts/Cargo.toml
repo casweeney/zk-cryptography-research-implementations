@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 ark-ff = "0.5.0"
-polynomials = { path = "../polynomials"}
 sha3 = "0.10.8"

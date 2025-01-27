@@ -454,7 +454,6 @@ name = "transcripts"
 version = "0.1.0"
 dependencies = [
  "ark-ff",
- "polynomials",
  "sha3",
 ]
 
