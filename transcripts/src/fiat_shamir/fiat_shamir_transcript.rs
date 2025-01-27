@@ -17,6 +17,7 @@ impl FiatShamirTranscriptInterface for Transcript {
     /// Takes in incoming_data as argument and uses the update() method from the hasher to incrementally update the state with the incoming_data
     /// The new data (incoming_data) is appended to the existing data in the state, and a new state is computed based on the combined data
     /// Note: The order of appending/updating/absorbing data matters: Hash(data1, data2) is different from Hash(data2, data1)
+    /// incoming_data => sum of polynomial evaluated values (y_values) |OR| univariate polynomial in evaluated form
     fn append(&mut self, incoming_data: &[u8]) {
         self.hasher.update(incoming_data);
     }
