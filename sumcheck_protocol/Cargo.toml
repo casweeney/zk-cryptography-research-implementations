@@ -4,3 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+transcripts = { path = "../transcripts" }
+polynomials = { path = "../polynomials" }

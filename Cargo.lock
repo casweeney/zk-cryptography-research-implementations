@@ -441,6 +441,10 @@ dependencies = [
 [[package]]
 name = "sumcheck_protocol"
 version = "0.1.0"
+dependencies = [
+ "polynomials",
+ "transcripts",
+]
 
 [[package]]
 name = "syn"
