@@ -439,6 +439,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "sumcheck_protocol"
+version = "0.1.0"
+dependencies = [
+ "polynomials",
+ "transcripts",
+]
+
+[[package]]
 name = "syn"
 version = "2.0.96"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -453,6 +461,7 @@ dependencies = [
 name = "transcripts"
 version = "0.1.0"
 dependencies = [
+ "ark-bn254",
  "ark-ff",
  "sha3",
 ]

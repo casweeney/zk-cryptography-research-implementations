@@ -42,3 +42,22 @@ impl FiatShamirTranscriptInterface for Transcript {
         F::from_le_bytes_mod_order(&random_challenge)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use ark_bn254::Fq;
+
+    #[test]
+    fn test_hash() {
+        let mut transcript = Transcript::new();
+        transcript.append("boy".as_bytes());
+
+        let random_challenge_vec = transcript.sample_random_challenge();
+        let random_challenge: Fq = transcript.random_challenge_as_field_element();
+
+        // Run this test using: cargo test -- --nocapture
+        dbg!(random_challenge_vec);
+        dbg!(random_challenge);
+    }
+}
