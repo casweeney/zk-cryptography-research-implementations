@@ -35,7 +35,7 @@ impl FiatShamirTranscriptInterface for Transcript {
         output_hash
     }
 
-    fn random_challenge_as_field_elements<F: PrimeField>(&mut self) -> F {
+    fn random_challenge_as_field_element<F: PrimeField>(&mut self) -> F {
         let random_challenge = self.sample_random_challenge();
 
         // convert bytes into field element using: from_bytes_mod_order()
