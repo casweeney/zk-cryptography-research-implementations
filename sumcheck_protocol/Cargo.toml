@@ -6,3 +6,5 @@ edition = "2021"
 [dependencies]
 transcripts = { path = "../transcripts" }
 polynomials = { path = "../polynomials" }
+ark-ff = "0.5.0"
+ark-bn254 = "0.5.0"
