@@ -1,5 +1,6 @@
 use sha3::{Keccak256, Digest};
 use crate::fiat_shamir::interface::FiatShamirTranscriptInterface;
+use ark_ff::PrimeField;
 
 pub struct Transcript {
     hasher: Keccak256,
@@ -32,5 +33,12 @@ impl FiatShamirTranscriptInterface for Transcript {
         self.hasher.update(output_hash);
 
         output_hash
+    }
+
+    fn random_challenge_as_field_elements<F: PrimeField>(&mut self) -> F {
+        let random_challenge = self.sample_random_challenge();
+
+        // convert bytes into field element using: from_bytes_mod_order()
+        F::from_le_bytes_mod_order(&random_challenge)
     }
 }
