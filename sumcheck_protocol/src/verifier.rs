@@ -34,7 +34,8 @@ impl <F: PrimeField>Verifier<F> {
         // Generate random challenge for each univariate polynomial
         // Add the evaluation to the current_sum
         // After the end loop, use the vector of challenges to evaluate the main initial polynomial
-        // The evaluation of the initial multilinear polynomial should be equal to the sum of the individual univariate polynomial evaluation at the different challenges
+        // The evaluation of the first initial multilinear polynomial -
+        // - should be equal to the sum of the individual univariate polynomial evaluation at the different generated challenges
         for round_polynomial in proof.round_univariate_polynomials.iter() {
             let eval_at_zero = vec![F::zero()];
             let eval_at_one = vec![F::one()];
