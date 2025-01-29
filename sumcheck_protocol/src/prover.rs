@@ -6,11 +6,11 @@ use transcripts::fiat_shamir::{
 use ark_ff::{PrimeField, BigInteger};
 
 pub struct Prover<F: PrimeField> {
-    initial_polynomial: MultilinearPolynomial<F>,
-    initial_claimed_sum: F,
-    transcript: Transcript,
-    round_univariate_polynomials: Vec<MultilinearPolynomial<F>>,
-    is_initialized: bool,
+    pub initial_polynomial: MultilinearPolynomial<F>,
+    pub initial_claimed_sum: F,
+    pub transcript: Transcript,
+    pub round_univariate_polynomials: Vec<MultilinearPolynomial<F>>,
+    pub is_initialized: bool,
 }
 
 pub struct SumcheckProof<F: PrimeField> {
