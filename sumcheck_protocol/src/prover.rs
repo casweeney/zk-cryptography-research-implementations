@@ -4,7 +4,6 @@ use transcripts::fiat_shamir::{
     interface::FiatShamirTranscriptInterface
 };
 use ark_ff::{PrimeField, BigInteger};
-use ark_bn254::Fq;
 
 pub struct Prover<F: PrimeField> {
     initial_polynomial: MultilinearPolynomial<F>,
@@ -62,7 +61,6 @@ impl <F: PrimeField>Prover<F> {
             current_polynomial = partial_evaluate(&current_polynomial, 0, random_challenge);
         }
 
-
         SumcheckProof {
             initial_polynomial: self.initial_polynomial.clone(),
             initial_claimed_sum: self.initial_claimed_sum,
@@ -72,7 +70,7 @@ impl <F: PrimeField>Prover<F> {
 }
 
 pub fn compute_sum<F: PrimeField>(polynomial_evaluated_values: Vec<F>) -> F {
-    let mut sum = F::from(0);
+    let mut sum = F::zero();
 
     for i in polynomial_evaluated_values.iter() {
         sum += i;
