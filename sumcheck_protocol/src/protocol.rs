@@ -3,7 +3,6 @@ mod tests {
     use ark_bls12_381::Fr;
     use crate::prover::Prover;
     use crate::verifier::Verifier;
-    use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 
     #[test]
     fn test_sumcheck_protocol_init() {
@@ -35,6 +34,66 @@ mod tests {
             Fr::from(3),
             Fr::from(6),
             Fr::from(11),
+        ];
+
+        let mut prover = Prover::init(polynomial_evaluated_values);
+        let proof = prover.prove();
+
+        let mut verifier: Verifier<Fr> = Verifier::init();
+        assert_eq!(verifier.is_initialized, true);
+
+        assert_eq!(verifier.verify(proof), true);
+    }
+
+    #[test]
+    fn test_sumcheck_protocol_prove_and_verify2() {
+        let polynomial_evaluated_values = vec![
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(1),
+            Fr::from(1),
+            Fr::from(1),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+        ];
+
+        let mut prover = Prover::init(polynomial_evaluated_values);
+        let proof = prover.prove();
+
+        let mut verifier: Verifier<Fr> = Verifier::init();
+        assert_eq!(verifier.is_initialized, true);
+
+        assert_eq!(verifier.verify(proof), true);
+    }
+
+    #[test]
+    fn test_sumcheck_protocol_prove_and_verify3() {
+        let polynomial_evaluated_values = vec![
+            Fr::from(1),
+            Fr::from(3),
+            Fr::from(5),
+            Fr::from(7),
+            Fr::from(2),
+            Fr::from(4),
+            Fr::from(6),
+            Fr::from(8),
+            Fr::from(3),
+            Fr::from(5),
+            Fr::from(7),
+            Fr::from(9),
+            Fr::from(4),
+            Fr::from(6),
+            Fr::from(8),
+            Fr::from(10),
         ];
 
         let mut prover = Prover::init(polynomial_evaluated_values);
