@@ -1,4 +1,4 @@
-use polynomials::{multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial}, univariate};
+use polynomials::multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial};
 use transcripts::fiat_shamir::{
     fiat_shamir_transcript::Transcript,
     interface::FiatShamirTranscriptInterface
