@@ -5,7 +5,7 @@ use ark_ff::{PrimeField, BigInteger};
 // which will be evaluated at a given variable values using partial evaluation
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultilinearPolynomial<F: PrimeField> {
-    evaluated_values: Vec<F>
+    pub evaluated_values: Vec<F>
 }
 
 impl <F: PrimeField>MultilinearPolynomial<F> {
@@ -38,6 +38,10 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
         }
 
         bytes
+    }
+
+    pub fn number_of_variables(&self) -> u32 {
+        self.evaluated_values.len().ilog2()
     }
 }
 
