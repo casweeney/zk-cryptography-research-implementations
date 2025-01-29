@@ -30,7 +30,7 @@ impl <F: PrimeField>Verifier<F> {
         self.transcript.append(&proof.initial_polynomial.convert_to_bytes());
         self.transcript.append(&field_element_to_bytes(proof.initial_claimed_sum));
 
-        let mut challenges: Vec<F> = Vec::new();
+        let mut challenges: Vec<F> = Vec::with_capacity(proof.round_univariate_polynomials.len());
 
         // Loop through the vector of univariate polynomials
         // Generate random challenge for each univariate polynomial
