@@ -26,7 +26,7 @@ impl <F: PrimeField>Prover<F> {
 
         Prover {
             initial_polynomial: polynomial,
-            initial_claimed_sum: compute_sum(polynomial_evaluated_values),
+            initial_claimed_sum: polynomial_evaluated_values.iter().sum(),
             transcript,
             round_univariate_polynomials: Vec::new(),
             is_initialized: true
@@ -67,16 +67,6 @@ impl <F: PrimeField>Prover<F> {
             round_univariate_polynomials: self.round_univariate_polynomials.clone(),
         }
     }
-}
-
-pub fn compute_sum<F: PrimeField>(polynomial_evaluated_values: Vec<F>) -> F {
-    let mut sum = F::zero();
-
-    for i in polynomial_evaluated_values.iter() {
-        sum += i;
-    }
-
-    sum
 }
 
 pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values: &Vec<F>) -> Vec<F> {
