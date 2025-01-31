@@ -36,11 +36,10 @@ impl <F: PrimeField>Prover<F> {
     pub fn prove(&mut self) -> SumcheckProof<F> {
         assert!(self.is_initialized, "Can't prove without init");
 
-        let mut random_challenges: Vec<F> = vec![];
-
         self.transcript.append(&self.initial_polynomial.convert_to_bytes());
         self.transcript.append(&field_element_to_bytes(self.initial_claimed_sum));
 
+        // This variable changes after the Initial polynomial is partially evaluated in each iteration using the random_challenge
         let mut current_polynomial = self.initial_polynomial.evaluated_values.clone();
 
         for _ in 0..self.initial_polynomial.number_of_variables() {
@@ -53,11 +52,10 @@ impl <F: PrimeField>Prover<F> {
             self.round_univariate_polynomials.push(univariate_polynomial);
             self.transcript.append(&univariate_poly_in_bytes);
 
-            // get random challenge
+            // Get random challenge <- from Transcript
             let random_challenge: F = self.transcript.random_challenge_as_field_element();
-            random_challenges.push(random_challenge);
 
-            // Partial evaluate current polynomial using the random challenge
+            // Partial evaluate current polynomial using the random_challenge
             current_polynomial = partial_evaluate(&current_polynomial, 0, random_challenge);
         }
 
