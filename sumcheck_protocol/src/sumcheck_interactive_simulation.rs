@@ -1,6 +1,8 @@
 use polynomials::multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial};
 use ark_ff::PrimeField;
 
+
+/////// Prover Implementation Starts Here ///////////
 pub struct Prover<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
     pub initial_claimed_sum: F,
@@ -49,9 +51,10 @@ pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values:
 
     univariate_polynomial
 }
+/////// Prover Implementation Ends Here ///////////
 
 
-/////// Verifier Section Starts Here //////////
+/////// Verifier Implementation Starts Here //////////
 pub struct Verifier<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
     pub current_claimed_sum: F,
@@ -101,7 +104,10 @@ impl <F: PrimeField>Verifier<F> {
         self.current_claimed_sum == self.initial_polynomial.evaluate(self.challenges.clone())
     }
 }
+/////// Verifier Implementation Ends Here //////////
 
+
+/////// Interactive Sumcheck Protocol Simulation Starts Here //////////
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -122,7 +128,7 @@ mod tests {
         let mut prover = Prover::new(values.clone());
         let mut verifier = Verifier::new(values.clone());
 
-        // First round - no challenge needed
+        // First round - no challenge needed for the prover
         let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round
         assert!(verifier.verify(claimed_sum, univariate));
 
