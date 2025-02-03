@@ -1,5 +1,5 @@
 use polynomials::multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial};
-use ark_ff::{PrimeField, BigInteger};
+use ark_ff::{PrimeField};
 
 pub struct Prover<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
@@ -50,33 +50,92 @@ pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values:
     univariate_polynomial
 }
 
+
+/////// Verifier Section Starts Here //////////
 pub struct Verifier<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
-    pub initial_claimed_sum: F
+    pub current_claimed_sum: F,
+    pub challenges: Vec<F>,
+    pub round: usize
 }
 
 impl <F: PrimeField>Verifier<F> {
     pub fn new(evaluated_values: Vec<F>) -> Self {
         Self {
             initial_polynomial: MultilinearPolynomial::new(evaluated_values.clone()),
-            initial_claimed_sum: evaluated_values.iter().sum()
+            current_claimed_sum: F::zero(),
+            challenges: Vec::new(),
+            round: 0
         }
     }
 
-    pub fn verify(claimed_sum: F, univariate_polynomial: Vec<F>) {
-        
+    pub fn verify(&mut self, claimed_sum: F, univariate_polynomial: Vec<F>) -> bool {
+        if univariate_polynomial.len() != 2 {
+            return false;
+        }
+
+        let actual_univariate_polynomial = MultilinearPolynomial::new(univariate_polynomial);
+
+        let eval_at_zero = actual_univariate_polynomial.evaluate(vec![F::zero()]);
+        let eval_at_one = actual_univariate_polynomial.evaluate(vec![F::one()]);
+
+        if eval_at_zero + eval_at_one != claimed_sum {
+            return false;
+        }
+
+        self.current_claimed_sum = claimed_sum;
+
+        return true;
     }
 
-    pub fn oracle_check() {
+    pub fn generate_challenge(&mut self) -> F {
+        let mut rng = rand::thread_rng();
+        let challenge = F::rand(&mut rng);
 
+        self.challenges.push(challenge);
+
+        challenge
+    }
+
+    pub fn oracle_check(&self) -> bool {
+        self.current_claimed_sum == self.initial_polynomial.evaluate(self.challenges.clone())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ark_bls12_381::Fr;
 
+    #[test]
     fn test_sumcheck_interactive_simulation() {
+        let values = vec![
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(2),
+            Fr::from(7),
+            Fr::from(3),
+            Fr::from(3),
+            Fr::from(6),
+            Fr::from(11),
+        ];
+        let mut prover = Prover::new(values.clone());
+        let mut verifier = Verifier::new(values.clone());
 
+        // First round - no challenge needed
+        let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round
+        assert!(verifier.verify(claimed_sum, univariate));
+
+        let no_of_varibles = values.len().ilog2();
+
+        // Subsequent rounds
+        for _ in 0..no_of_varibles {
+            let challenge = verifier.generate_challenge();
+            let (claimed_sum, univariate) = prover.prove(challenge);
+
+            assert!(verifier.verify(claimed_sum, univariate));
+        }
+        
+        assert!(verifier.oracle_check());
     }
 }
