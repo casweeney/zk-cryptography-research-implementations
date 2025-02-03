@@ -130,7 +130,10 @@ mod tests {
 
         // First round - no challenge needed for the prover
         let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round
+
+        // cargo test -- --nocapture
         println!("Round 0 - Claimed sum: {:?}, Univariate: {:?}", claimed_sum, univariate);
+
         assert!(verifier.verify(claimed_sum, univariate));
 
         let no_of_varibles = values.len().ilog2();
@@ -140,6 +143,7 @@ mod tests {
             let challenge = verifier.generate_challenge();
             let (claimed_sum, univariate) = prover.prove(challenge);
 
+            // cargo test -- --nocapture
             println!("Round {} - Challenge: {:?}, Claimed sum: {:?}, Univariate: {:?}", i+1, challenge, claimed_sum, univariate);
 
             assert!(verifier.verify(claimed_sum, univariate));
