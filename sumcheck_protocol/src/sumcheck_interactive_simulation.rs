@@ -1,5 +1,5 @@
 use polynomials::multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial};
-use ark_ff::{PrimeField};
+use ark_ff::PrimeField;
 
 pub struct Prover<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
