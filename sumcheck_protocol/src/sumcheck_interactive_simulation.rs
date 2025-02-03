@@ -130,14 +130,17 @@ mod tests {
 
         // First round - no challenge needed for the prover
         let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round
+        println!("Round 0 - Claimed sum: {:?}, Univariate: {:?}", claimed_sum, univariate);
         assert!(verifier.verify(claimed_sum, univariate));
 
         let no_of_varibles = values.len().ilog2();
 
         // Subsequent rounds
-        for _ in 0..no_of_varibles {
+        for i in 0..no_of_varibles {
             let challenge = verifier.generate_challenge();
             let (claimed_sum, univariate) = prover.prove(challenge);
+
+            println!("Round {} - Challenge: {:?}, Claimed sum: {:?}, Univariate: {:?}", i+1, challenge, claimed_sum, univariate);
 
             assert!(verifier.verify(claimed_sum, univariate));
         }
@@ -145,3 +148,10 @@ mod tests {
         assert!(verifier.oracle_check());
     }
 }
+
+// Summary of the test:
+// The first eval is not where the round starts. 
+// The first eval is just the prover sending the initial claimed sum of the original polynomial and a univariate polynomial to prove the sum.
+
+// A round starts when the verifier generates a random challenge, 
+// and the random challenge generation will be 3 which is the number of variables, anything less than that will fail.
