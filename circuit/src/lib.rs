@@ -80,3 +80,25 @@ impl <F: PrimeField>Circuit<F> {
         current_input[0]
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_bn254::Fq;
+
+    #[test]
+    fn test_circuit_evaluation() {
+        let input = vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)];
+        let gate1 = Gate::new(0, 1, Operator::Add);
+        let gate2 = Gate::new(2, 3, Operator::Mul);
+
+        let gate3 = Gate::new(0, 1, Operator::Mul);
+
+        let layer1 = Layer::new(vec![gate1, gate2]);
+        let layer2 = Layer::new(vec![gate3]);
+
+        let circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
+
+        assert_eq!(circuit.evaluate(input), Fq::from(100));
+    }
+}
