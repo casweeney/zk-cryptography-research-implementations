@@ -59,9 +59,12 @@ impl <F: PrimeField>Circuit<F> {
             let mut resultant_evaluations = Vec::new();
 
             for j in 0..self.layers[i].gates.len() {
+                let left_index_value = current_input[self.layers[i].gates[j].left_index];
+                let right_index_value = current_input[self.layers[i].gates[j].right_index];
+
                 let current_gate_evaluation = match self.layers[i].gates[j].operator {
-                    Operator::Add => current_input[self.layers[i].gates[j].left_index] + current_input[self.layers[i].gates[j].right_index],
-                    Operator::Mul => current_input[self.layers[i].gates[j].left_index] * current_input[self.layers[i].gates[j].right_index]
+                    Operator::Add => left_index_value + right_index_value,
+                    Operator::Mul => left_index_value * right_index_value
                 };
 
                 resultant_evaluations.push(current_gate_evaluation);
@@ -93,5 +96,21 @@ mod tests {
         let circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
 
         assert_eq!(circuit.evaluate(input), Fq::from(100));
+    }
+
+    #[test]
+    fn test_circuit_evaluation2() {
+        let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        let gate1 = Gate::new(0, 1, Operator::Add);
+        let gate2 = Gate::new(2, 3, Operator::Mul);
+
+        let gate3 = Gate::new(0, 1, Operator::Add);
+
+        let layer1 = Layer::new(vec![gate1, gate2]);
+        let layer2 = Layer::new(vec![gate3]);
+
+        let circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
+
+        assert_eq!(circuit.evaluate(input), Fq::from(15));
     }
 }
