@@ -43,3 +43,23 @@ impl <F: PrimeField>Circuit<F> {
 
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_bn254::Fq;
+
+    #[test]
+    fn test_gate_add_operator() {
+        let gate = Gate::new(Fq::from(5), Fq::from(3), Operator::Add);
+
+        assert_eq!(gate.output, Fq::from(8));
+    }
+
+    #[test]
+    fn test_gate_mul_operator() {
+        let gate = Gate::new(Fq::from(5), Fq::from(3), Operator::Mul);
+
+        assert_eq!(gate.output, Fq::from(15));
+    }
+}
