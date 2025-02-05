@@ -20,6 +20,8 @@ pub struct Circuit<F: PrimeField> {
     pub layers: Vec<Layer<F>>
 }
 
+//////////////// Gate Implementation ///////////////////
+
 impl <F: PrimeField>Gate<F> {
     pub fn new(left_input: F, right_input: F, operator: Operator) -> Self {
         Self {
@@ -38,7 +40,25 @@ pub fn evaluate_inputs<F: PrimeField>(left: F, right: F, operator: &Operator) ->
     }
 }
 
+/////////////// Layer implementation ////////////////////
+impl <F: PrimeField>Layer<F> {
+    pub fn new(gates: Vec<Gate<F>>) -> Self {
+        Self {
+            gates
+        }
+    }
+}
+
+
+//////////////// Circuit Implementation ///////////////////
+
 impl <F: PrimeField>Circuit<F> {
+    pub fn new(layers: Vec<Layer<F>>) -> Self {
+        Self {
+            layers
+        }
+    }
+    
     pub fn execute(values: Vec<F>) {
 
     }
