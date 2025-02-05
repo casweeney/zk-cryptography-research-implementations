@@ -32,13 +32,6 @@ impl Gate {
     }
 }
 
-pub fn evaluate_inputs<F: PrimeField>(left: F, right: F, operator: &Operator) -> F {
-    match operator {
-        Operator::Add => left + right,
-        Operator::Mul => left * right
-    }
-}
-
 /////////////// Layer implementation ////////////////////
 impl Layer {
     pub fn new(gates: Vec<Gate>) -> Self {
