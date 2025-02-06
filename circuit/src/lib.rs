@@ -116,14 +116,14 @@ mod tests {
         let mut circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
 
         let result = circuit.evaluate(input);
-        let layers_outputs = vec![
+        let expected_layers_evaluation = vec![
             vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)],
             vec![Fq::from(5), Fq::from(20)],
             vec![Fq::from(100)]
         ];
 
         assert_eq!(result[0], Fq::from(100));
-        assert_eq!(circuit.layer_evaluations, layers_outputs);
+        assert_eq!(circuit.layer_evaluations, expected_layers_evaluation);
     }
 
     #[test]
@@ -141,14 +141,14 @@ mod tests {
         let mut circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
         let result = circuit.evaluate(input);
 
-        let layers_outputs = vec![
+        let expected_layers_evaluation = vec![
             vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)],
             vec![Fq::from(12), Fq::from(3)],
             vec![Fq::from(15)]
         ];
 
         assert_eq!(result[0], Fq::from(15));
-        assert_eq!(circuit.layer_evaluations, layers_outputs)
+        assert_eq!(circuit.layer_evaluations, expected_layers_evaluation)
     }
 
     #[test]
