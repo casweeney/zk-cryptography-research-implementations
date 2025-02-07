@@ -21,7 +21,7 @@ pub struct SumcheckProof<F: PrimeField> {
 
 impl <F: PrimeField>Prover<F> {
     pub fn init(polynomial_evaluated_values: Vec<F>) -> Self {
-        let polynomial = MultilinearPolynomial::new(polynomial_evaluated_values.clone());
+        let polynomial = MultilinearPolynomial::new(&polynomial_evaluated_values.clone());
         let transcript = Transcript::new();
 
         Prover {
@@ -47,7 +47,7 @@ impl <F: PrimeField>Prover<F> {
             // It does this by splitting the multilinear polynomial into 2 equal halves and summing each half
             // This will return a univariate polynomial where the first variable of the multilinear polynomial is evaluated at 0 and 1
             let univariate_polynomial_values = split_polynomial_and_sum_each(&current_polynomial);
-            let univariate_polynomial = MultilinearPolynomial::new(univariate_polynomial_values);
+            let univariate_polynomial = MultilinearPolynomial::new(&univariate_polynomial_values);
             let univariate_poly_in_bytes = univariate_polynomial.convert_to_bytes();
             self.round_univariate_polynomials.push(univariate_polynomial);
             self.transcript.append(&univariate_poly_in_bytes);

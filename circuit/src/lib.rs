@@ -1,5 +1,6 @@
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 
 pub enum Operator {
     Add,
@@ -73,7 +74,6 @@ impl <F: PrimeField>Circuit<F> {
                 .max()
                 .unwrap_or(0);
 
-
             let mut resultant_evaluations = vec![F::zero(); max_output_index + 1];
 
             // Iterate through the gates vector of each layer: 
@@ -100,6 +100,15 @@ impl <F: PrimeField>Circuit<F> {
         }
 
         current_input
+    }
+
+    // This function gets the evaluations of a layer: Vec<F> whose index is passed,
+    // then it converts it to a Multilinear polynomial
+    // This will be used for the MLE: Multilinear Extension
+    pub fn w_i_polynomial(&self, i: usize) -> MultilinearPolynomial<F> {
+        assert!(i < self.layer_evaluations.len(), "layer index out of bounds");
+
+        MultilinearPolynomial::new(&self.layer_evaluations[i])
     }
 }
 
