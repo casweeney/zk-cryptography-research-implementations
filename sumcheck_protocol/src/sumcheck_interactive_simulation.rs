@@ -13,7 +13,7 @@ pub struct Prover<F: PrimeField> {
 impl <F: PrimeField>Prover<F> {
     pub fn new(evaluated_values: Vec<F>) -> Self {
         Self {
-            initial_polynomial: MultilinearPolynomial::new(evaluated_values.clone()),
+            initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             initial_claimed_sum: evaluated_values.iter().sum(),
             current_polynomial: evaluated_values,
             round: 0
@@ -65,7 +65,7 @@ pub struct Verifier<F: PrimeField> {
 impl <F: PrimeField>Verifier<F> {
     pub fn new(evaluated_values: Vec<F>) -> Self {
         Self {
-            initial_polynomial: MultilinearPolynomial::new(evaluated_values.clone()),
+            initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             current_claimed_sum: F::zero(),
             challenges: Vec::new(),
             round: 0
@@ -77,7 +77,7 @@ impl <F: PrimeField>Verifier<F> {
             return false;
         }
 
-        let actual_univariate_polynomial = MultilinearPolynomial::new(univariate_polynomial);
+        let actual_univariate_polynomial = MultilinearPolynomial::new(&univariate_polynomial);
 
         let eval_at_zero = actual_univariate_polynomial.evaluate(vec![F::zero()]);
         let eval_at_one = actual_univariate_polynomial.evaluate(vec![F::one()]);

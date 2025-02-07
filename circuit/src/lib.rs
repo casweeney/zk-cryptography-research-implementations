@@ -1,5 +1,6 @@
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 
 pub enum Operator {
     Add,
@@ -99,6 +100,12 @@ impl <F: PrimeField>Circuit<F> {
         }
 
         current_input
+    }
+
+    pub fn w_i_polynomial(&self, i: usize) -> MultilinearPolynomial<F> {
+        assert!(i <= self.layer_evaluations.len(), "layer index out of bounds");
+
+        MultilinearPolynomial::new(&self.layer_evaluations[i])
     }
 }
 
