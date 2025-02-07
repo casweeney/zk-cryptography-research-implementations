@@ -103,7 +103,7 @@ impl <F: PrimeField>Circuit<F> {
     }
 
     pub fn w_i_polynomial(&self, i: usize) -> MultilinearPolynomial<F> {
-        assert!(i <= self.layer_evaluations.len(), "layer index out of bounds");
+        assert!(i < self.layer_evaluations.len(), "layer index out of bounds");
 
         MultilinearPolynomial::new(&self.layer_evaluations[i])
     }
