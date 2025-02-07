@@ -63,7 +63,7 @@ impl <F: PrimeField>Circuit<F> {
         // Store the initial input values
         self.layer_evaluations = vec![current_input.clone()];
 
-        // Using Iterators
+        // Iterate through the layers vector: in each iteration, iterate through the gates of each layer
         for layer in self.layers.iter() {
             let max_output_index = layer.gates.iter()
                 .map(|gate| gate.output_index)
@@ -73,6 +73,10 @@ impl <F: PrimeField>Circuit<F> {
 
             let mut resultant_evaluations = vec![F::zero(); max_output_index + 1];
 
+            // Iterate through the gates vector of each layer: 
+            // use the left_index, right_index and operator of each Gate struct to perform an operation 
+            // based on the values in the left and right index positions.
+            // The operation is based on the Operator of the Gate: Add or Mul
             for gate in layer.gates.iter() {
                 let left_index_value = current_input[gate.left_index];
                 let right_index_value = current_input[gate.right_index];
