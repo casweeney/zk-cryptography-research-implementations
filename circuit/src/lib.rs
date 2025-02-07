@@ -46,6 +46,9 @@ impl Layer {
     }
 }
 
+// w_i(layer_id)
+// add_mul(layer_id) -> (Poly, Poly)
+
 
 //////////////// Circuit Implementation /////////////////
 impl <F: PrimeField>Circuit<F> {
@@ -58,7 +61,7 @@ impl <F: PrimeField>Circuit<F> {
     }
 
     pub fn evaluate(&mut self, values: Vec<F>) -> Vec<F> {
-        let mut current_input = values.clone();
+        let mut current_input = values;
 
         // Store the initial input values
         self.layer_evaluations = vec![current_input.clone()];
