@@ -102,6 +102,9 @@ impl <F: PrimeField>Circuit<F> {
         current_input
     }
 
+    // This function gets the evaluations of a layer: Vec<F> whose index is passed,
+    // then it converts it to a Multilinear polynomial
+    // This will be used for the MLE: Multilinear Extension
     pub fn w_i_polynomial(&self, i: usize) -> MultilinearPolynomial<F> {
         assert!(i < self.layer_evaluations.len(), "layer index out of bounds");
 
