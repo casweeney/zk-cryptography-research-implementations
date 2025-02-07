@@ -73,7 +73,6 @@ impl <F: PrimeField>Circuit<F> {
                 .max()
                 .unwrap_or(0);
 
-
             let mut resultant_evaluations = vec![F::zero(); max_output_index + 1];
 
             // Iterate through the gates vector of each layer: 
