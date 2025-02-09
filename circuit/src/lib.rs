@@ -146,7 +146,7 @@ pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (u
     let num_of_variables = var_a_length + (2 * var_b_and_c_length);
     let bool_hypercube_combinations = 1 << num_of_variables;
 
-    (num_of_variables, 1 << bool_hypercube_combinations)
+    (num_of_variables, bool_hypercube_combinations)
 }
 
 pub fn convert_binary_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
@@ -254,6 +254,17 @@ mod tests {
     }
 
     #[test]
+    fn test_num_of_mle_vars_and_bool_hypercube_combinations() {
+        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(0), (3, 8));
+        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(1), (5, 32));
+        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(2), (8, 256));
+        assert_ne!(num_of_mle_vars_and_bool_hypercube_combinations(2), (7, 128));
+        assert_ne!(num_of_mle_vars_and_bool_hypercube_combinations(3), (9, 512));
+        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(3), (11, 2048));
+        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(4), (14, 16384));
+    }
+
+    #[test]
     fn test_add_i_and_mul_i_mle_layer0() {
         let gate1 = Gate::new(0, 1, 0, Operator::Add);
         // switched output index
@@ -280,8 +291,6 @@ mod tests {
 
     #[test]
     fn test_add_i_and_mul_i_mle_layer1() {
-        let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
-        
         let gate1 = Gate::new(0, 1, 0, Operator::Add);
         // switched output index
         let gate2 = Gate::new(0, 1, 1, Operator::Add);
@@ -294,13 +303,15 @@ mod tests {
         // let result = circuit.evaluate(input);
 
         let (add_i_poly, mul_i_poly) = circuit.add_i_and_mul_i_mle(1);
-        let expected_add_i_poly = MultilinearPolynomial::new(
-            &vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
-        );
 
-        let expected_mul_i_poly = MultilinearPolynomial::new(
-            &vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
-        );
+        // For layer 1: 2^5 = 32 combinations
+        let mut expected_add = vec![Fq::from(0); 32];
+        expected_add[17] = Fq::from(1);  // position from gate2: "10001" = 17
+        let expected_add_i_poly = MultilinearPolynomial::new(&expected_add);
+
+        let mut expected_mul = vec![Fq::from(0); 32];
+        expected_mul[11] = Fq::from(1);  // position from gate3: "01011" = 11
+        let expected_mul_i_poly = MultilinearPolynomial::new(&expected_mul);
 
         assert_eq!(add_i_poly, expected_add_i_poly);
         assert_eq!(mul_i_poly, expected_mul_i_poly);
