@@ -47,9 +47,6 @@ impl Layer {
     }
 }
 
-// add_mul(layer_id) -> (Poly, Poly)
-
-
 //////////////// Circuit Implementation /////////////////
 impl <F: PrimeField>Circuit<F> {
     pub fn new(layers: Vec<Layer>) -> Self {
@@ -111,16 +108,47 @@ impl <F: PrimeField>Circuit<F> {
         MultilinearPolynomial::new(&self.layer_evaluations[layer_index])
     }
 
-    // pub fn add_and_mul_i_polynomial(&mut self, layer_index: usize) -> (Vec<F>, Vec<F>) {
-    //     let layer_gates = &self.layers[layer_index].gates;
+    pub fn add_and_mul_i_mle(&mut self, layer_index: usize) -> (Vec<F>, Vec<F>) {
+        let (_num_of_vars, bool_hypercuber_combinationss) = num_of_mle_vars_and_bool_hypercube_combinations(layer_index);
 
-    //     for (gate_index, gate) in layer_gates.iter().enumerate() {
-    //         let mut add_i_values = vec![0];
-    //         let mut mul_i_value = vec![0];
-    //     }
+        let mut add_i_values = vec![0; bool_hypercuber_combinationss];
+        let mut mul_i_value = vec![0; bool_hypercuber_combinationss];
 
-    //     todo!()
-    // }
+        let layer_gates = &self.layers[layer_index].gates;
+
+        for (gate_index, gate) in layer_gates.iter().enumerate() {
+            match gate.operator {
+                Operator::Add => {
+
+                },
+                Operator::Mul => {
+
+                }
+            }
+        }
+
+        todo!()
+    }
+}
+
+
+pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (usize, usize) {
+    if layer_index == 0 {
+        return (3, 1 << 3);
+    }
+
+    let var_a_length = layer_index;
+    let var_b_and_c_length = var_a_length + 1;
+
+    let num_of_variables = var_a_length + (2 * var_b_and_c_length);
+    let bool_hypercube_combinations = 1 << num_of_variables;
+
+    (num_of_variables, 1 << bool_hypercube_combinations)
+}
+
+pub fn convert_binary_to_decimal(variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
+
+    todo!()
 }
 
 #[cfg(test)]
@@ -137,7 +165,6 @@ mod tests {
         let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
         
         let layer0 = Layer::new(vec![gate1]);
-
         let layer1 = Layer::new(vec![gate2, gate3]);
 
         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
