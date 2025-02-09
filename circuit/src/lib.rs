@@ -117,11 +117,11 @@ impl <F: PrimeField>Circuit<F> {
         for (_, gate) in self.layers[layer_index].gates.iter().enumerate() {
             match gate.operator {
                 Operator::Add => {
-                    let position_index = convert_binary_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    let position_index = convert_to_binary_and_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
                     add_i_values[position_index] = F::one();
                 },
                 Operator::Mul => {
-                    let position_index = convert_binary_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    let position_index = convert_to_binary_and_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
                     mul_i_values[position_index] = F::one();
                 }
             }
@@ -149,7 +149,7 @@ pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (u
     (num_of_variables, bool_hypercube_combinations)
 }
 
-pub fn convert_binary_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
+pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
     // convert decimal to binary
     let a_in_binary = convert_decimal_to_binary_and_pad(variable_a, layer_index);
     let b_in_binary = convert_decimal_to_binary_and_pad(variable_b, layer_index + 1);
