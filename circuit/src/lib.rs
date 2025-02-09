@@ -114,7 +114,7 @@ impl <F: PrimeField>Circuit<F> {
         let mut add_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
         let mut mul_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
 
-        for (_, gate) in self.layers[layer_index].gates.iter().enumerate() {
+        for gate in self.layers[layer_index].gates.iter() {
             match gate.operator {
                 Operator::Add => {
                     let position_index = convert_to_binary_and_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
@@ -155,8 +155,10 @@ pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, v
     let b_in_binary = convert_decimal_to_binary_and_pad(variable_b, layer_index + 1);
     let c_in_binary = convert_decimal_to_binary_and_pad(variable_c, layer_index + 1);
 
+    // combine a, b and c binaries
     let combined_binary = a_in_binary + &b_in_binary + &c_in_binary;
     
+    // convert the combined binaries back to decimal
     usize::from_str_radix(&combined_binary, 2).unwrap_or(0)
 }
 
