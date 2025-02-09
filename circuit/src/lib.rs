@@ -112,22 +112,24 @@ impl <F: PrimeField>Circuit<F> {
         let (_num_of_vars, bool_hypercuber_combinationss) = num_of_mle_vars_and_bool_hypercube_combinations(layer_index);
 
         let mut add_i_values = vec![0; bool_hypercuber_combinationss];
-        let mut mul_i_value = vec![0; bool_hypercuber_combinationss];
+        let mut mul_i_values = vec![0; bool_hypercuber_combinationss];
 
         let layer_gates = &self.layers[layer_index].gates;
 
         for (gate_index, gate) in layer_gates.iter().enumerate() {
             match gate.operator {
                 Operator::Add => {
-
+                    let position_index = convert_binary_to_decimal(gate.output_index, gate.left_index, gate.right_index);
+                    add_i_values[position_index] = 1;
                 },
                 Operator::Mul => {
-
+                    let position_index = convert_binary_to_decimal(gate.output_index, gate.left_index, gate.right_index);
+                    mul_i_values[position_index] = 1;
                 }
             }
         }
 
-        todo!()
+        (add_i_values, mul_i_values)
     }
 }
 
@@ -147,8 +149,7 @@ pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (u
 }
 
 pub fn convert_binary_to_decimal(variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
-
-    todo!()
+    (variable_a << 2) | (variable_b << 1) | variable_c
 }
 
 #[cfg(test)]
