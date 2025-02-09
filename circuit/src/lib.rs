@@ -47,7 +47,6 @@ impl Layer {
     }
 }
 
-// w_i(layer_id)
 // add_mul(layer_id) -> (Poly, Poly)
 
 
@@ -64,11 +63,11 @@ impl <F: PrimeField>Circuit<F> {
     pub fn evaluate(&mut self, values: Vec<F>) -> Vec<F> {
         let mut current_input = values;
 
-        // Store the initial input values
-        self.layer_evaluations = vec![current_input.clone()];
+        let mut reversed_evaluations = Vec::new();
+        reversed_evaluations.push(current_input.clone());
 
         // Iterate through the layers vector: in each iteration, iterate through the gates of each layer
-        for layer in self.layers.iter() {
+        for layer in self.layers.iter().rev() {
             let max_output_index = layer.gates.iter()
                 .map(|gate| gate.output_index)
                 .max()
@@ -94,22 +93,34 @@ impl <F: PrimeField>Circuit<F> {
             }
 
             current_input = resultant_evaluations;
-
-            // store each layer's output, so that we can have the evaluations of each layer represented as an array
-            self.layer_evaluations.push(current_input.clone());
+            reversed_evaluations.push(current_input.clone());
         }
 
-        current_input
+        reversed_evaluations.reverse();
+        self.layer_evaluations = reversed_evaluations;
+
+        self.layer_evaluations[0].clone()
     }
 
-    // This function gets the evaluations of a layer: Vec<F> whose index is passed,
+    // This function gets the evaluations of a layer: Vec<F> whose index is passed as layer_index,
     // then it converts it to a Multilinear polynomial
     // This will be used for the MLE: Multilinear Extension
-    pub fn w_i_polynomial(&self, i: usize) -> MultilinearPolynomial<F> {
-        assert!(i < self.layer_evaluations.len(), "layer index out of bounds");
+    pub fn w_i_polynomial(&self, layer_index: usize) -> MultilinearPolynomial<F> {
+        assert!(layer_index < self.layer_evaluations.len(), "layer index out of bounds");
 
-        MultilinearPolynomial::new(&self.layer_evaluations[i])
+        MultilinearPolynomial::new(&self.layer_evaluations[layer_index])
     }
+
+    // pub fn add_and_mul_i_polynomial(&mut self, layer_index: usize) -> (Vec<F>, Vec<F>) {
+    //     let layer_gates = &self.layers[layer_index].gates;
+
+    //     for (gate_index, gate) in layer_gates.iter().enumerate() {
+    //         let mut add_i_values = vec![0];
+    //         let mut mul_i_value = vec![0];
+    //     }
+
+    //     todo!()
+    // }
 }
 
 #[cfg(test)]
@@ -121,21 +132,22 @@ mod tests {
     fn test_circuit_evaluation() {
         let input = vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)];
 
-        let gate1 = Gate::new(0, 1, 0, Operator::Add);
-        let gate2 = Gate::new(2, 3, 1,  Operator::Mul);
+        let gate1 = Gate::new(0, 1, 0, Operator::Mul);
+        let gate2 = Gate::new(0, 1, 0, Operator::Add);
+        let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
+        
+        let layer0 = Layer::new(vec![gate1]);
 
-        let gate3 = Gate::new(0, 1, 0, Operator::Mul);
+        let layer1 = Layer::new(vec![gate2, gate3]);
 
-        let layer1 = Layer::new(vec![gate1, gate2]);
-        let layer2 = Layer::new(vec![gate3]);
-
-        let mut circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
+        let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
 
         let result = circuit.evaluate(input);
+
         let expected_layers_evaluation = vec![
-            vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)],
+            vec![Fq::from(100)],
             vec![Fq::from(5), Fq::from(20)],
-            vec![Fq::from(100)]
+            vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)]
         ];
 
         assert_eq!(result[0], Fq::from(100));
@@ -145,22 +157,22 @@ mod tests {
     #[test]
     fn test_circuit_evaluation2() {
         let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
         // switched output index
-        let gate1 = Gate::new(0, 1, 1, Operator::Add);
-        let gate2 = Gate::new(2, 3, 0, Operator::Mul);
+        let gate2 = Gate::new(0, 1, 1, Operator::Add);
+        let gate3 = Gate::new(2, 3, 0, Operator::Mul);
 
-        let gate3 = Gate::new(0, 1, 0, Operator::Add);
+        let layer0 = Layer::new(vec![gate1]);
+        let layer1 = Layer::new(vec![gate2, gate3]);
 
-        let layer1 = Layer::new(vec![gate1, gate2]);
-        let layer2 = Layer::new(vec![gate3]);
-
-        let mut circuit = Circuit::<Fq>::new(vec![layer1, layer2]);
+        let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
         let result = circuit.evaluate(input);
 
         let expected_layers_evaluation = vec![
-            vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)],
+            vec![Fq::from(15)],
             vec![Fq::from(12), Fq::from(3)],
-            vec![Fq::from(15)]
+            vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)]
         ];
 
         assert_eq!(result[0], Fq::from(15));
@@ -170,26 +182,26 @@ mod tests {
     #[test]
     fn test_circuit_evaluation3() {
         let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)];
+
+        // layer 0 gates
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
         
         // layer 1 gates
-        let gate1 = Gate::new(0, 1, 0, Operator::Add);
-        let gate2 = Gate::new(2, 3, 1, Operator::Mul);
-        let gate3 = Gate::new(4, 5, 2, Operator::Mul);
-        let gate4 = Gate::new(6, 7, 3, Operator::Mul);
+        let gate2 = Gate::new(0, 1, 0, Operator::Add);
+        let gate3 = Gate::new(2, 3, 1, Operator::Mul);
 
         // layer 2 gates
-        let gate5 = Gate::new(0, 1, 0, Operator::Add);
-        let gate6 = Gate::new(2, 3, 1, Operator::Mul);
-
-        // layer 3 gates
-        let gate7 = Gate::new(0, 1, 0, Operator::Add);
+        let gate4 = Gate::new(0, 1, 0, Operator::Add);
+        let gate5 = Gate::new(2, 3, 1, Operator::Mul);
+        let gate6 = Gate::new(4, 5, 2, Operator::Mul);
+        let gate7 = Gate::new(6, 7, 3, Operator::Mul);
 
         // Layers
-        let layer1 = Layer::new(vec![gate1, gate2, gate3, gate4]);
-        let layer2 = Layer::new(vec![gate5, gate6]);
-        let layer3 = Layer::new(vec![gate7]);
+        let layer0 = Layer::new(vec![gate1]);
+        let layer1 = Layer::new(vec![gate2, gate3]);
+        let layer2 = Layer::new(vec![gate4, gate5, gate6, gate7]);
 
-        let mut circuit = Circuit::<Fq>::new(vec![layer1, layer2, layer3]);
+        let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1, layer2]);
         let result = circuit.evaluate(input);
 
         assert_eq!(result[0], Fq::from(1695));
