@@ -47,9 +47,6 @@ impl Layer {
     }
 }
 
-// add_mul(layer_id) -> (Poly, Poly)
-
-
 //////////////// Circuit Implementation /////////////////
 impl <F: PrimeField>Circuit<F> {
     pub fn new(layers: Vec<Layer>) -> Self {
@@ -111,16 +108,66 @@ impl <F: PrimeField>Circuit<F> {
         MultilinearPolynomial::new(&self.layer_evaluations[layer_index])
     }
 
-    // pub fn add_and_mul_i_polynomial(&mut self, layer_index: usize) -> (Vec<F>, Vec<F>) {
-    //     let layer_gates = &self.layers[layer_index].gates;
+    pub fn add_i_and_mul_i_mle(&mut self, layer_index: usize) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
+        let (_, num_of_bool_hypercube_combinations) = num_of_mle_vars_and_bool_hypercube_combinations(layer_index);
 
-    //     for (gate_index, gate) in layer_gates.iter().enumerate() {
-    //         let mut add_i_values = vec![0];
-    //         let mut mul_i_value = vec![0];
-    //     }
+        let mut add_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
+        let mut mul_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
 
-    //     todo!()
-    // }
+        for (_, gate) in self.layers[layer_index].gates.iter().enumerate() {
+            match gate.operator {
+                Operator::Add => {
+                    let position_index = convert_binary_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    add_i_values[position_index] = F::one();
+                },
+                Operator::Mul => {
+                    let position_index = convert_binary_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    mul_i_values[position_index] = F::one();
+                }
+            }
+        }
+
+        let add_i_polynomial = MultilinearPolynomial::new(&add_i_values);
+        let mul_i_polynomial = MultilinearPolynomial::new(&mul_i_values);
+
+        (add_i_polynomial, mul_i_polynomial)
+    }
+}
+
+
+pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (usize, usize) {
+    if layer_index == 0 {
+        return (3, 1 << 3);
+    }
+
+    let var_a_length = layer_index;
+    let var_b_and_c_length = var_a_length + 1;
+
+    let num_of_variables = var_a_length + (2 * var_b_and_c_length);
+    let bool_hypercube_combinations = 1 << num_of_variables;
+
+    (num_of_variables, 1 << bool_hypercube_combinations)
+}
+
+pub fn convert_binary_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
+    // convert decimal to binary
+    let a_in_binary = convert_decimal_to_binary_and_pad(variable_a, layer_index);
+    let b_in_binary = convert_decimal_to_binary_and_pad(variable_b, layer_index + 1);
+    let c_in_binary = convert_decimal_to_binary_and_pad(variable_c, layer_index + 1);
+
+    let combined_binary = a_in_binary + &b_in_binary + &c_in_binary;
+    
+    usize::from_str_radix(&combined_binary, 2).unwrap_or(0)
+}
+
+pub fn convert_decimal_to_binary_and_pad(decimal_number: usize, mut bit_count: usize) -> String {
+    if bit_count == 0 {
+        bit_count = 1;
+    }
+    
+    let binary = format!("{:b}", decimal_number);
+
+    "0".repeat(bit_count.saturating_sub(binary.len())) + &binary
 }
 
 #[cfg(test)]
@@ -137,7 +184,6 @@ mod tests {
         let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
         
         let layer0 = Layer::new(vec![gate1]);
-
         let layer1 = Layer::new(vec![gate2, gate3]);
 
         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
@@ -205,5 +251,58 @@ mod tests {
         let result = circuit.evaluate(input);
 
         assert_eq!(result[0], Fq::from(1695));
+    }
+
+    #[test]
+    fn test_add_i_and_mul_i_mle_layer0() {
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
+        // switched output index
+        let gate2 = Gate::new(0, 1, 1, Operator::Add);
+        let gate3 = Gate::new(2, 3, 0, Operator::Mul);
+
+        let layer0 = Layer::new(vec![gate1]);
+        let layer1 = Layer::new(vec![gate2, gate3]);
+
+        let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
+
+        let (add_i_poly, mul_i_poly) = circuit.add_i_and_mul_i_mle(0);
+        let expected_add_i_poly = MultilinearPolynomial::new(
+            &vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
+        );
+
+        let expected_mul_i_poly = MultilinearPolynomial::new(
+            &vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
+        );
+
+        assert_eq!(add_i_poly, expected_add_i_poly);
+        assert_eq!(mul_i_poly, expected_mul_i_poly);
+    }
+
+    #[test]
+    fn test_add_i_and_mul_i_mle_layer1() {
+        let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
+        
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
+        // switched output index
+        let gate2 = Gate::new(0, 1, 1, Operator::Add);
+        let gate3 = Gate::new(2, 3, 0, Operator::Mul);
+
+        let layer0 = Layer::new(vec![gate1]);
+        let layer1 = Layer::new(vec![gate2, gate3]);
+
+        let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
+        // let result = circuit.evaluate(input);
+
+        let (add_i_poly, mul_i_poly) = circuit.add_i_and_mul_i_mle(1);
+        let expected_add_i_poly = MultilinearPolynomial::new(
+            &vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
+        );
+
+        let expected_mul_i_poly = MultilinearPolynomial::new(
+            &vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
+        );
+
+        assert_eq!(add_i_poly, expected_add_i_poly);
+        assert_eq!(mul_i_poly, expected_mul_i_poly);
     }
 }
