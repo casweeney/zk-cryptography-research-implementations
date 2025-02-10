@@ -109,7 +109,7 @@ impl <F: PrimeField>Circuit<F> {
     }
 
     pub fn add_i_and_mul_i_mle(&mut self, layer_index: usize) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
-        let (_, num_of_bool_hypercube_combinations) = num_of_mle_vars_and_bool_hypercube_combinations(layer_index);
+        let (_, num_of_bool_hypercube_combinations) = num_of_layer_vars_and_bool_hypercube_combinations(layer_index);
 
         let mut add_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
         let mut mul_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
@@ -135,15 +135,16 @@ impl <F: PrimeField>Circuit<F> {
 }
 
 
-pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (usize, usize) {
+pub fn num_of_layer_vars_and_bool_hypercube_combinations(layer_index: usize) -> (usize, usize) {
     if layer_index == 0 {
         return (3, 1 << 3);
     }
 
     let var_a_length = layer_index;
-    let var_b_and_c_length = var_a_length + 1;
+    let var_b_length = var_a_length + 1;
+    let var_c_length = var_a_length + 1;
 
-    let num_of_variables = var_a_length + (2 * var_b_and_c_length);
+    let num_of_variables = var_a_length + var_b_length + var_c_length;
     let bool_hypercube_combinations = 1 << num_of_variables;
 
     (num_of_variables, bool_hypercube_combinations)
@@ -151,9 +152,9 @@ pub fn num_of_mle_vars_and_bool_hypercube_combinations(layer_index: usize) -> (u
 
 pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
     // convert decimal to binary
-    let a_in_binary = convert_decimal_to_binary_and_pad(variable_a, layer_index);
-    let b_in_binary = convert_decimal_to_binary_and_pad(variable_b, layer_index + 1);
-    let c_in_binary = convert_decimal_to_binary_and_pad(variable_c, layer_index + 1);
+    let a_in_binary = convert_decimal_to_padded_binary(variable_a, layer_index);
+    let b_in_binary = convert_decimal_to_padded_binary(variable_b, layer_index + 1);
+    let c_in_binary = convert_decimal_to_padded_binary(variable_c, layer_index + 1);
 
     // combine a, b and c binaries
     let combined_binary = a_in_binary + &b_in_binary + &c_in_binary;
@@ -162,14 +163,19 @@ pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, v
     usize::from_str_radix(&combined_binary, 2).unwrap_or(0)
 }
 
-pub fn convert_decimal_to_binary_and_pad(decimal_number: usize, mut bit_count: usize) -> String {
-    if bit_count == 0 {
-        bit_count = 1;
+pub fn convert_decimal_to_padded_binary(decimal_number: usize, bit_length: usize) -> String {
+    format!("{:0>width$b}", decimal_number, width = bit_length)
+}
+
+// unused function: just another method of converting a decimal number to padded binary number
+pub fn transform_decimal_to_padded_binary(decimal_number: usize, mut bit_length: usize) -> String {
+    if bit_length == 0 {
+        bit_length = 1;
     }
     
     let binary = format!("{:b}", decimal_number);
 
-    "0".repeat(bit_count.saturating_sub(binary.len())) + &binary
+    "0".repeat(bit_length.saturating_sub(binary.len())) + &binary
 }
 
 #[cfg(test)]
@@ -256,14 +262,14 @@ mod tests {
     }
 
     #[test]
-    fn test_num_of_mle_vars_and_bool_hypercube_combinations() {
-        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(0), (3, 8));
-        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(1), (5, 32));
-        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(2), (8, 256));
-        assert_ne!(num_of_mle_vars_and_bool_hypercube_combinations(2), (7, 128));
-        assert_ne!(num_of_mle_vars_and_bool_hypercube_combinations(3), (9, 512));
-        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(3), (11, 2048));
-        assert_eq!(num_of_mle_vars_and_bool_hypercube_combinations(4), (14, 16384));
+    fn test_num_of_layer_vars_and_bool_hypercube_combinations() {
+        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(0), (3, 8));
+        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(1), (5, 32));
+        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(2), (8, 256));
+        assert_ne!(num_of_layer_vars_and_bool_hypercube_combinations(2), (7, 128));
+        assert_ne!(num_of_layer_vars_and_bool_hypercube_combinations(3), (9, 512));
+        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(3), (11, 2048));
+        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(4), (14, 16384));
     }
 
     #[test]
