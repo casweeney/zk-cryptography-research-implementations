@@ -109,10 +109,11 @@ impl <F: PrimeField>Circuit<F> {
     }
 
     pub fn add_i_and_mul_i_mle(&mut self, layer_index: usize) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
-        let (_, num_of_bool_hypercube_combinations) = num_of_layer_vars_and_bool_hypercube_combinations(layer_index);
+        let number_of_layer_variables = num_of_layer_variables(layer_index);
+        let boolean_hypercube_combinations = 1 << number_of_layer_variables; // 2 ^ number_of_layer_variables
 
-        let mut add_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
-        let mut mul_i_values = vec![F::zero(); num_of_bool_hypercube_combinations];
+        let mut add_i_values = vec![F::zero(); boolean_hypercube_combinations];
+        let mut mul_i_values = vec![F::zero(); boolean_hypercube_combinations];
 
         for gate in self.layers[layer_index].gates.iter() {
             match gate.operator {
@@ -135,9 +136,9 @@ impl <F: PrimeField>Circuit<F> {
 }
 
 
-pub fn num_of_layer_vars_and_bool_hypercube_combinations(layer_index: usize) -> (usize, usize) {
+pub fn num_of_layer_variables(layer_index: usize) -> usize {
     if layer_index == 0 {
-        return (3, 1 << 3);
+        return 3;
     }
 
     let var_a_length = layer_index;
@@ -145,9 +146,8 @@ pub fn num_of_layer_vars_and_bool_hypercube_combinations(layer_index: usize) -> 
     let var_c_length = var_a_length + 1;
 
     let num_of_variables = var_a_length + var_b_length + var_c_length;
-    let bool_hypercube_combinations = 1 << num_of_variables;
 
-    (num_of_variables, bool_hypercube_combinations)
+    num_of_variables
 }
 
 pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
@@ -262,14 +262,17 @@ mod tests {
     }
 
     #[test]
-    fn test_num_of_layer_vars_and_bool_hypercube_combinations() {
-        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(0), (3, 8));
-        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(1), (5, 32));
-        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(2), (8, 256));
-        assert_ne!(num_of_layer_vars_and_bool_hypercube_combinations(2), (7, 128));
-        assert_ne!(num_of_layer_vars_and_bool_hypercube_combinations(3), (9, 512));
-        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(3), (11, 2048));
-        assert_eq!(num_of_layer_vars_and_bool_hypercube_combinations(4), (14, 16384));
+    fn test_num_of_layer_variables() {
+        // Assert Equal
+        assert_eq!(num_of_layer_variables(0), 3);
+        assert_eq!(num_of_layer_variables(1), 5);
+        assert_eq!(num_of_layer_variables(2), 8);
+        assert_eq!(num_of_layer_variables(3), 11);
+        assert_eq!(num_of_layer_variables(4), 14);
+
+        // Assert Not Equal
+        assert_ne!(num_of_layer_variables(2), 7);
+        assert_ne!(num_of_layer_variables(3), 9);
     }
 
     #[test]
