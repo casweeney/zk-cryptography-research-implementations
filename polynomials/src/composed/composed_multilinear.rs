@@ -17,8 +17,13 @@ impl <F: PrimeField>ProductPolynomial<F> {
     }
     
     pub fn evaluate_product_poly(polynomials: Vec<MultilinearPolynomial<F>>, values: Vec<F>) -> F {
-    
-        todo!()
+        let mut result = F::one();
+
+        for polynomial in polynomials.iter() {
+            result *= polynomial.evaluate(&values);
+        }
+
+        result
     }
     
     pub fn partial_evaluate_product_poly(polynomials: Vec<MultilinearPolynomial<F>>) {
