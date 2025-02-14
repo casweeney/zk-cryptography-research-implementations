@@ -1,20 +1,27 @@
 use ark_ff::PrimeField;
 use crate::multilinear::evaluation_form::{MultilinearPolynomial, partial_evaluate};
 
-pub struct ComposedMultilinearPolynomial<F: PrimeField> {
-    pub evaluated_values: Vec<F>
+pub struct ProductPolynomial<F: PrimeField> {
+    pub polynomials: Vec<MultilinearPolynomial<F>>
 }
 
-pub fn evaluate<F: PrimeField>(polynomials: Vec<MultilinearPolynomial<F>>, values: Vec<F>) -> F {
-    let mut result = F::one();
+pub struct SumPolynomial<F: PrimeField> {
+    pub polynomials: Vec<MultilinearPolynomial<F>>
+}
 
-    for polynomial in polynomials.iter() {
-        result *= polynomial.evaluate(values.clone());
+impl <F: PrimeField>ProductPolynomial<F> {
+    pub fn new(polynomials: Vec<MultilinearPolynomial<F>>) -> Self {
+        Self {
+            polynomials
+        }
     }
-
-    result
+    
+    pub fn evaluate_product_poly(polynomials: Vec<MultilinearPolynomial<F>>, values: Vec<F>) -> F {
+    
+        todo!()
+    }
+    
+    pub fn partial_evaluate_product_poly(polynomials: Vec<MultilinearPolynomial<F>>) {
+        todo!()
+    }
 }
-
-// pub fn partial_evaluate<F: PrimeField>(polynomials: Vec<ComposedMultilinearPolynomial<F>>) {
-
-// }
