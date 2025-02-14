@@ -86,7 +86,7 @@ impl <F: PrimeField>Circuit<F> {
                 };
 
                 // place the result of the evaluation of each gate at the specified output index
-                resultant_evaluations[gate.output_index] = current_gate_evaluation;
+                resultant_evaluations[gate.output_index] += current_gate_evaluation;
             }
 
             current_input = resultant_evaluations;
