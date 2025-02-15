@@ -1,5 +1,5 @@
 use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface};
-use crate::prover::{SumcheckProof, field_element_to_bytes};
+use crate::basic_sumcheck::prover::{SumcheckProof, field_element_to_bytes};
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
 
