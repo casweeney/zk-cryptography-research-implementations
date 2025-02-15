@@ -46,6 +46,24 @@ impl <F: PrimeField>ProductPolynomial<F> {
 
         evaluated_polynomials
     }
+
+    pub fn multiply_polynomials_element_wise(&self) -> MultilinearPolynomial<F> {
+        assert!(self.polynomials.len() > 1, "more than one polynomial required for mul operation");
+
+        let mut resultant_values = self.polynomials[0].evaluated_values.to_vec();
+
+        for polynomial in self.polynomials.iter().skip(1) {
+            for (i, value) in polynomial.evaluated_values.iter().enumerate() {
+                resultant_values[i] *= value
+            }
+        }
+
+        MultilinearPolynomial::new(&resultant_values)
+    }
+
+    pub fn add_polynomials_element_wise(&self) -> Vec<F> {
+        todo!()
+    }
 }
 
 #[cfg(test)]
@@ -71,6 +89,7 @@ mod tests {
         let polynomials = vec![polynomail1, polynomail2];
 
         let product_polynomial = ProductPolynomial::new(polynomials);
+        // a = 1, b = 2
         let values = vec![Fq::from(1), Fq::from(2)];
 
         assert_eq!(product_polynomial.evaluate_product_poly(&values), Fq::from(24));
@@ -89,5 +108,18 @@ mod tests {
         let expected_partial_eval_result = vec![expect_poly1, expect_poly2];
 
         assert_eq!(product_polynomial.partial_evaluate_product_poly(0, Fq::from(2)), expected_partial_eval_result);
+    }
+
+    #[test]
+    fn test_multiply_polynomials_element_wise() {
+        let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+
+        let polynomials = vec![polynomail1, polynomail2];
+
+        let product_polynomial = ProductPolynomial::new(polynomials);
+        let expected_product = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(6)]);
+
+        assert_eq!(product_polynomial.multiply_polynomials_element_wise(), expected_product);
     }
 }
