@@ -72,6 +72,16 @@ impl <F: PrimeField>ComposedPolynomial<F> {
 
         MultilinearPolynomial::new(&resultant_values)
     }
+
+    pub fn convert_to_bytes(&self) -> Vec<u8> {
+        let mut bytes = Vec::new();
+
+        for polynomial in &self.polynomials {
+            bytes.extend_from_slice(&polynomial.convert_to_bytes());
+        }
+
+        bytes
+    }
 }
 
 #[cfg(test)]
