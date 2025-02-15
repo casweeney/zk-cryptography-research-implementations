@@ -1,15 +1,13 @@
 use ark_ff::PrimeField;
-use crate::multilinear::evaluation_form::{MultilinearPolynomial, partial_evaluate};
+use crate::multilinear::evaluation_form::{MultilinearPolynomial, partial_evaluate as multilinear_partial_evaluate};
 
-pub struct ProductPolynomial<F: PrimeField> {
+// This is called composed polynomial because it is a composition of all the polynomials and helper functions
+// that makes up the f(b,c) - polynomial : used for the 2 to 1 trick for proving via sumcheck
+pub struct ComposedPolynomial<F: PrimeField> {
     pub polynomials: Vec<MultilinearPolynomial<F>>
 }
 
-pub struct SumPolynomial<F: PrimeField> {
-    pub polynomials: Vec<MultilinearPolynomial<F>>
-}
-
-impl <F: PrimeField>ProductPolynomial<F> {
+impl <F: PrimeField>ComposedPolynomial<F> {
     pub fn new(polynomials: Vec<MultilinearPolynomial<F>>) -> Self {
         // get the number of variables of the first multilinear polynomial
         // then iterate through all the polynomials and check if they have the same number of variables
@@ -25,7 +23,7 @@ impl <F: PrimeField>ProductPolynomial<F> {
         }
     }
     
-    pub fn evaluate_product_poly(&self, values: &Vec<F>) -> F {
+    pub fn evaluate(&self, values: &Vec<F>) -> F {
         let mut result = F::one();
 
         for polynomial in self.polynomials.iter() {
@@ -35,11 +33,11 @@ impl <F: PrimeField>ProductPolynomial<F> {
         result
     }
     
-    pub fn partial_evaluate_product_poly(&self, evaluating_variable: usize, value: F) -> Vec<MultilinearPolynomial<F>> {
+    pub fn partial_evaluate(&self, evaluating_variable: usize, value: F) -> Vec<MultilinearPolynomial<F>> {
         let mut evaluated_polynomials: Vec<MultilinearPolynomial<F>> = Vec::new();
 
         for polynomial in self.polynomials.iter() {
-            let partial_evaluation = partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
+            let partial_evaluation = multilinear_partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
 
             evaluated_polynomials.push(MultilinearPolynomial::new(&partial_evaluation));
         }
@@ -88,7 +86,7 @@ mod tests {
         let poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);  // 2 variables
     
         // This is expected to panic
-        ProductPolynomial::new(vec![poly1, poly2]);
+        ComposedPolynomial::new(vec![poly1, poly2]);
     }
 
     #[test]
@@ -98,11 +96,11 @@ mod tests {
 
         let polynomials = vec![polynomail1, polynomail2];
 
-        let product_polynomial = ProductPolynomial::new(polynomials);
+        let product_polynomial = ComposedPolynomial::new(polynomials);
         // a = 1, b = 2
         let values = vec![Fq::from(1), Fq::from(2)];
 
-        assert_eq!(product_polynomial.evaluate_product_poly(&values), Fq::from(24));
+        assert_eq!(product_polynomial.evaluate(&values), Fq::from(24));
     }
 
     #[test]
@@ -111,13 +109,13 @@ mod tests {
         let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
 
         let polynomials = vec![polynomail1, polynomail2];
-        let product_polynomial = ProductPolynomial::new(polynomials);
+        let product_polynomial = ComposedPolynomial::new(polynomials);
 
         let expect_poly1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(4)]);
         let expect_poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(6)]);
         let expected_partial_eval_result = vec![expect_poly1, expect_poly2];
 
-        assert_eq!(product_polynomial.partial_evaluate_product_poly(0, Fq::from(2)), expected_partial_eval_result);
+        assert_eq!(product_polynomial.partial_evaluate(0, Fq::from(2)), expected_partial_eval_result);
     }
 
     #[test]
@@ -127,7 +125,7 @@ mod tests {
 
         let polynomials = vec![polynomail1, polynomail2];
 
-        let product_polynomial = ProductPolynomial::new(polynomials);
+        let product_polynomial = ComposedPolynomial::new(polynomials);
         let expected_product = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(6)]);
 
         assert_eq!(product_polynomial.multiply_polynomials_element_wise(), expected_product);
@@ -140,7 +138,7 @@ mod tests {
 
         let polynomials = vec![polynomail1, polynomail2];
 
-        let product_polynomial = ProductPolynomial::new(polynomials);
+        let product_polynomial = ComposedPolynomial::new(polynomials);
         let expected_sum = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(5)]);
 
         assert_eq!(product_polynomial.add_polynomials_element_wise(), expected_sum);
