@@ -11,6 +11,15 @@ pub struct SumPolynomial<F: PrimeField> {
 
 impl <F: PrimeField>ProductPolynomial<F> {
     pub fn new(polynomials: Vec<MultilinearPolynomial<F>>) -> Self {
+        // get the number of variables of the first multilinear polynomial
+        // then iterate through all the polynomials and check if they have the same number of variables
+        // assert if their number of variables are not the same
+        let num_of_variables = polynomials[0].number_of_variables();
+        assert!(
+            polynomials.iter().all(|polynomial| polynomial.number_of_variables() == num_of_variables),
+            "different number of variables"
+        );
+
         Self {
             polynomials
         }
@@ -26,8 +35,16 @@ impl <F: PrimeField>ProductPolynomial<F> {
         result
     }
     
-    pub fn partial_evaluate_product_poly(polynomials: Vec<MultilinearPolynomial<F>>) -> Vec<MultilinearPolynomial<F>> {
-        todo!()
+    pub fn partial_evaluate_product_poly(&self, evaluating_variable: usize, value: F) -> Vec<MultilinearPolynomial<F>> {
+        let mut evaluated_polynomials: Vec<MultilinearPolynomial<F>> = Vec::new();
+
+        for polynomial in self.polynomials.iter() {
+            let partial_evaluation = partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
+
+            evaluated_polynomials.push(MultilinearPolynomial::new(&partial_evaluation));
+        }
+
+        evaluated_polynomials
     }
 }
 
@@ -35,6 +52,16 @@ impl <F: PrimeField>ProductPolynomial<F> {
 mod tests {
     use super::*;
     use ark_bn254::Fq;
+
+    #[test]
+    #[should_panic(expected = "different number of variables")]
+    fn test_new_with_different_polynomial_lengths() {
+        let poly1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(2)]);  // 1 variable
+        let poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);  // 2 variables
+    
+        // This is expected to panic
+        ProductPolynomial::new(vec![poly1, poly2]);
+    }
 
     #[test]
     fn test_evaluate_product_poly() {
@@ -47,5 +74,20 @@ mod tests {
         let values = vec![Fq::from(1), Fq::from(2)];
 
         assert_eq!(product_polynomial.evaluate_product_poly(&values), Fq::from(24));
+    }
+
+    #[test]
+    fn test_partial_evaluate_product_poly() {
+        let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+
+        let polynomials = vec![polynomail1, polynomail2];
+        let product_polynomial = ProductPolynomial::new(polynomials);
+
+        let expect_poly1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(4)]);
+        let expect_poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(6)]);
+        let expected_partial_eval_result = vec![expect_poly1, expect_poly2];
+
+        assert_eq!(product_polynomial.partial_evaluate_product_poly(0, Fq::from(2)), expected_partial_eval_result);
     }
 }
