@@ -1,13 +1,12 @@
 use ark_ff::PrimeField;
-use crate::multilinear::evaluation_form::{MultilinearPolynomial, partial_evaluate as multilinear_partial_evaluate};
+use crate::multilinear::evaluation_form::MultilinearPolynomial;
 
-// This is called composed polynomial because it is a composition of all the polynomials and helper functions
-// that makes up the f(b,c) - polynomial : used for the 2 to 1 trick for proving via sumcheck
-pub struct ComposedPolynomial<F: PrimeField> {
+// Sum Polynomial hold 2 or more multilinear polynomials and performs addition operations on them
+pub struct SumPolynomial<F: PrimeField> {
     pub polynomials: Vec<MultilinearPolynomial<F>>
 }
 
-impl <F: PrimeField>ComposedPolynomial<F> {
+impl <F: PrimeField>SumPolynomial<F> {
     pub fn new(polynomials: Vec<MultilinearPolynomial<F>>) -> Self {
         // get the number of variables of the first multilinear polynomial
         // then iterate through all the polynomials and check if they have the same number of variables
@@ -24,10 +23,10 @@ impl <F: PrimeField>ComposedPolynomial<F> {
     }
     
     pub fn evaluate(&self, values: &Vec<F>) -> F {
-        let mut result = F::one();
+        let mut result = F::zero();
 
         for polynomial in self.polynomials.iter() {
-            result *= polynomial.evaluate(&values);
+            result += polynomial.evaluate(&values);
         }
 
         result
@@ -37,26 +36,12 @@ impl <F: PrimeField>ComposedPolynomial<F> {
         let mut evaluated_polynomials: Vec<MultilinearPolynomial<F>> = Vec::new();
 
         for polynomial in self.polynomials.iter() {
-            let partial_evaluation = multilinear_partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
+            let partial_evaluation = MultilinearPolynomial::partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
 
             evaluated_polynomials.push(MultilinearPolynomial::new(&partial_evaluation));
         }
 
         evaluated_polynomials
-    }
-
-    pub fn multiply_polynomials_element_wise(&self) -> MultilinearPolynomial<F> {
-        assert!(self.polynomials.len() > 1, "more than one polynomial required for mul operation");
-
-        let mut resultant_values = self.polynomials[0].evaluated_values.to_vec();
-
-        for polynomial in self.polynomials.iter().skip(1) {
-            for (i, value) in polynomial.evaluated_values.iter().enumerate() {
-                resultant_values[i] *= value
-            }
-        }
-
-        MultilinearPolynomial::new(&resultant_values)
     }
 
     pub fn add_polynomials_element_wise(&self) -> MultilinearPolynomial<F> {
@@ -100,49 +85,35 @@ mod tests {
         let poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);  // 2 variables
     
         // This is expected to panic
-        ComposedPolynomial::new(vec![poly1, poly2]);
+        SumPolynomial::new(vec![poly1, poly2]);
     }
 
     #[test]
-    fn test_evaluate_product_poly() {
+    fn test_evaluate_sum_poly() {
         let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
         let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
 
-        let polynomials = vec![polynomail1, polynomail2];
+        let sum_polynomial = SumPolynomial::new(vec![polynomail1, polynomail2]);
 
-        let product_polynomial = ComposedPolynomial::new(polynomials);
         // a = 1, b = 2
         let values = vec![Fq::from(1), Fq::from(2)];
 
-        assert_eq!(product_polynomial.evaluate(&values), Fq::from(24));
+        assert_eq!(sum_polynomial.evaluate(&values), Fq::from(10));
     }
 
     #[test]
-    fn test_partial_evaluate_product_poly() {
+    fn test_partial_evaluate_sum_poly() {
         let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
         let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
 
-        let polynomials = vec![polynomail1, polynomail2];
-        let product_polynomial = ComposedPolynomial::new(polynomials);
+        let sum_polynomial = SumPolynomial::new(vec![polynomail1, polynomail2]);
 
         let expect_poly1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(4)]);
         let expect_poly2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(6)]);
+
         let expected_partial_eval_result = vec![expect_poly1, expect_poly2];
 
-        assert_eq!(product_polynomial.partial_evaluate(0, Fq::from(2)), expected_partial_eval_result);
-    }
-
-    #[test]
-    fn test_multiply_polynomials_element_wise() {
-        let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
-        let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
-
-        let polynomials = vec![polynomail1, polynomail2];
-
-        let product_polynomial = ComposedPolynomial::new(polynomials);
-        let expected_product = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(6)]);
-
-        assert_eq!(product_polynomial.multiply_polynomials_element_wise(), expected_product);
+        assert_eq!(sum_polynomial.partial_evaluate(0, Fq::from(2)), expected_partial_eval_result);
     }
 
     #[test]
@@ -150,23 +121,20 @@ mod tests {
         let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
         let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
 
-        let polynomials = vec![polynomail1, polynomail2];
+        let sum_polynomial = SumPolynomial::new(vec![polynomail1, polynomail2]);
 
-        let product_polynomial = ComposedPolynomial::new(polynomials);
         let expected_sum = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(5)]);
 
-        assert_eq!(product_polynomial.add_polynomials_element_wise(), expected_sum);
+        assert_eq!(sum_polynomial.add_polynomials_element_wise(), expected_sum);
     }
 
     #[test]
-    fn test_degree() {
+    fn test_degree_sum_poly() {
         let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
         let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
 
-        let polynomials = vec![polynomail1, polynomail2];
+        let sum_polynomial = SumPolynomial::new(vec![polynomail1, polynomail2]);
 
-        let product_polynomial = ComposedPolynomial::new(polynomials);
-
-        assert_eq!(product_polynomial.degree(), 2);
+        assert_eq!(sum_polynomial.degree(), 2);
     }
 }
