@@ -16,7 +16,7 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
     }
 
     // The evaluate function calls the partial evaluate multiple times
-    pub fn evaluate(&self, values: Vec<F>) -> F {
+    pub fn evaluate(&self, values: &Vec<F>) -> F {
         let mut r_polynomial = self.evaluated_values.clone();
         let expected_number_of_partial_eval = values.len();
 
@@ -119,6 +119,6 @@ mod tests {
         let polynomial = MultilinearPolynomial::new(&evaluated_values);
         let values = vec![Fq::from(6), Fq::from(2)];
 
-        assert_eq!(polynomial.evaluate(values), Fq::from(78));
+        assert_eq!(polynomial.evaluate(&values), Fq::from(78));
     }
 }

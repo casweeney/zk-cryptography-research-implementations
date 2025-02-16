@@ -1,5 +1,5 @@
 use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface};
-use crate::prover::{SumcheckProof, field_element_to_bytes};
+use crate::basic_sumcheck::prover::{SumcheckProof, field_element_to_bytes};
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
 
@@ -42,7 +42,7 @@ impl <F: PrimeField>Verifier<F> {
             let eval_at_zero = vec![F::zero()];
             let eval_at_one = vec![F::one()];
 
-            if proof.round_univariate_polynomials[i].evaluate(eval_at_zero) + proof.round_univariate_polynomials[i].evaluate(eval_at_one) != current_claim_sum {
+            if proof.round_univariate_polynomials[i].evaluate(&eval_at_zero) + proof.round_univariate_polynomials[i].evaluate(&eval_at_one) != current_claim_sum {
                 return false;
             }
 
@@ -51,10 +51,10 @@ impl <F: PrimeField>Verifier<F> {
             let challenge: F = self.transcript.random_challenge_as_field_element();
             challenges.push(challenge);
 
-            current_claim_sum = proof.round_univariate_polynomials[i].evaluate(vec![challenge])
+            current_claim_sum = proof.round_univariate_polynomials[i].evaluate(&vec![challenge])
         }
 
-        let final_evaluation = proof.initial_polynomial.evaluate(challenges);
+        let final_evaluation = proof.initial_polynomial.evaluate(&challenges);
 
         // Oracle Check
         final_evaluation == current_claim_sum

@@ -79,8 +79,8 @@ impl <F: PrimeField>Verifier<F> {
 
         let actual_univariate_polynomial = MultilinearPolynomial::new(&univariate_polynomial);
 
-        let eval_at_zero = actual_univariate_polynomial.evaluate(vec![F::zero()]);
-        let eval_at_one = actual_univariate_polynomial.evaluate(vec![F::one()]);
+        let eval_at_zero = actual_univariate_polynomial.evaluate(&vec![F::zero()]);
+        let eval_at_one = actual_univariate_polynomial.evaluate(&vec![F::one()]);
 
         if eval_at_zero + eval_at_one != claimed_sum {
             return false;
@@ -101,7 +101,7 @@ impl <F: PrimeField>Verifier<F> {
     }
 
     pub fn oracle_check(&self) -> bool {
-        self.current_claimed_sum == self.initial_polynomial.evaluate(self.challenges.clone())
+        self.current_claimed_sum == self.initial_polynomial.evaluate(&self.challenges)
     }
 }
 /////// Verifier Implementation Ends Here //////////
