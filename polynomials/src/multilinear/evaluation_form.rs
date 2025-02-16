@@ -92,8 +92,32 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
         result_polynomial
     }
 
-    pub fn add_mul_blowup() {
-        
+    pub fn polynomial_tensor_add(w_b: &MultilinearPolynomial<F>, w_c: &MultilinearPolynomial<F>) -> MultilinearPolynomial<F> {
+        assert!(w_b.evaluated_values.len() == w_c.evaluated_values.len());
+
+        let mut add_result = Vec::new();
+
+        for b in &w_b.evaluated_values {
+            for c in &w_c.evaluated_values {
+                add_result.push(*b + *c);
+            }
+        }
+
+        MultilinearPolynomial::new(&add_result)
+    }
+
+    pub fn polynomial_tensor_mul(w_b: &MultilinearPolynomial<F>, w_c: &MultilinearPolynomial<F>) -> MultilinearPolynomial<F> {
+        assert!(w_b.evaluated_values.len() == w_c.evaluated_values.len());
+
+        let mut mul_result = Vec::new();
+
+        for b in &w_b.evaluated_values {
+            for c in &w_c.evaluated_values {
+                mul_result.push(*b * *c);
+            }
+        }
+
+        MultilinearPolynomial::new(&mul_result)
     }
 }
 
