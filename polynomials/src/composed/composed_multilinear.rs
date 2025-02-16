@@ -82,6 +82,10 @@ impl <F: PrimeField>ComposedPolynomial<F> {
 
         bytes
     }
+
+    pub fn degree(&self) -> usize {
+        self.polynomials.len()
+    }
 }
 
 #[cfg(test)]
@@ -152,5 +156,17 @@ mod tests {
         let expected_sum = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(5)]);
 
         assert_eq!(product_polynomial.add_polynomials_element_wise(), expected_sum);
+    }
+
+    #[test]
+    fn test_degree() {
+        let polynomail1 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let polynomail2 = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+
+        let polynomials = vec![polynomail1, polynomail2];
+
+        let product_polynomial = ComposedPolynomial::new(polynomials);
+
+        assert_eq!(product_polynomial.degree(), 2);
     }
 }
