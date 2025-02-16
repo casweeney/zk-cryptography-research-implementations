@@ -1,29 +1,23 @@
-use polynomials::composed::composed_multilinear::ComposedPolynomial;
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface};
 use ark_ff::{PrimeField, BigInteger};
 
 pub struct GKRSumcheck<F: PrimeField> {
-    pub polynomial: ComposedPolynomial<F>,
+    pub polynomial: MultilinearPolynomial<F>,
     pub claimed_sum: F
 }
 
 pub struct GKRSumcheckProof<F: PrimeField> {
-    pub polynomial: ComposedPolynomial<F>,
+    pub polynomial: MultilinearPolynomial<F>,
     pub round_univariate_polynomials: Vec<Vec<F>>
 }
 
 impl <F: PrimeField>GKRSumcheck<F> {
-    pub fn init(polynomial: ComposedPolynomial<F>) -> Self {
-        let claimed_sum = Self::calculate_product_poly_sum(&polynomial);
-
+    pub fn init(polynomial: MultilinearPolynomial<F>) -> Self {
         Self {
             polynomial,
-            claimed_sum
+            claimed_sum: Default::default()
         }
-    }
-
-    pub fn calculate_product_poly_sum(polynomial: &ComposedPolynomial<F>) -> F {
-        polynomial.multiply_polynomials_element_wise().evaluated_values.iter().sum()
     }
 
     pub fn prove() -> GKRSumcheckProof<F> {
@@ -32,7 +26,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
         todo!()
     }
 
-    pub fn verify() -> bool {
+    pub fn verify(&self, proof: &MultilinearPolynomial<F>) -> bool {
         let transcript = Transcript::new();
 
         todo!()
