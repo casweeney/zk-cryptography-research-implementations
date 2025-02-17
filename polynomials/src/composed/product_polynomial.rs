@@ -44,6 +44,8 @@ impl <F: PrimeField>ProductPolynomial<F> {
         evaluated_polynomials
     }
 
+    // This function reduces the Vec of Multilinear polynomials to one Polynomial by
+    // basically performing element-wise multiplication on the multilinear polynomials that makes up the ProductPolynomial
     pub fn multiply_polynomials_element_wise(&self) -> MultilinearPolynomial<F> {
         assert!(self.polynomials.len() > 1, "more than one polynomial required for mul operation");
 

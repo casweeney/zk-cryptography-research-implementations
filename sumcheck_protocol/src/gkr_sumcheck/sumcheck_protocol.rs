@@ -7,6 +7,10 @@ pub struct GKRSumcheck<F: PrimeField> {
     pub claimed_sum: F
 }
 
+// no need init poly
+// prover needs to return challenges
+// Verify will use
+
 pub struct GKRSumcheckProof<F: PrimeField> {
     pub polynomial: MultilinearPolynomial<F>,
     pub round_univariate_polynomials: Vec<Vec<F>>
