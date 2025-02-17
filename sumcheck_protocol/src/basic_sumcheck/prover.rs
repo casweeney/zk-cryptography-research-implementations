@@ -1,4 +1,4 @@
-use polynomials::multilinear::evaluation_form::{partial_evaluate, MultilinearPolynomial};
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use transcripts::fiat_shamir::{
     fiat_shamir_transcript::Transcript,
     interface::FiatShamirTranscriptInterface
@@ -56,7 +56,7 @@ impl <F: PrimeField>Prover<F> {
             let random_challenge: F = self.transcript.random_challenge_as_field_element();
 
             // Partial evaluate current polynomial using the random_challenge
-            current_polynomial = partial_evaluate(&current_polynomial, 0, random_challenge);
+            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge);
         }
 
         SumcheckProof {
