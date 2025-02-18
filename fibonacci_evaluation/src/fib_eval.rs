@@ -5,7 +5,7 @@ pub fn evaluation<F: PrimeField>(evaluation_value: F) -> F {
     let x_values = vec![F::from(1), F::from(2), F::from(3), F::from(4), F::from(5), F::from(6), F::from(7)];
     let y_values = vec![F::from(1), F::from(2), F::from(3), F::from(5), F::from(8), F::from(13), F::from(21)];
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
+    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
     polynomial.evaluate(evaluation_value)
 }

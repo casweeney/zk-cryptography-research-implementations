@@ -23,7 +23,7 @@ pub fn s_shares<F: PrimeField>(secret: F, password: u64, threshold: u64, number_
             y_values.push(F::rand(&mut rng));
         }
     
-        let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
+        let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
     
         // Checking if we have a valid polynomial of the correct degree
         // If we do, the loop breaks, else the loop continues and generates a new polynomial with new random points
@@ -48,7 +48,7 @@ pub fn s_recover_secret<F: PrimeField>(shares: Vec<(F, F)>, password: u64) -> F 
     }
 
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(x_values, y_values);
+    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
     let secret = polynomial.evaluate(F::from(password));
 

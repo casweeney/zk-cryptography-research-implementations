@@ -1,1 +1,1 @@
-pub mod sumcheck_protocol;
+pub mod gkr_sumcheck_protocol;
