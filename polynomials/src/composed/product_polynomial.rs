@@ -2,6 +2,7 @@ use ark_ff::PrimeField;
 use crate::multilinear::evaluation_form::MultilinearPolynomial;
 
 // Product Polynomial hold 2 or more multilinear polynomials and performs multiplication operations on them
+#[derive(Clone, Debug, PartialEq)]
 pub struct ProductPolynomial<F: PrimeField> {
     pub polynomials: Vec<MultilinearPolynomial<F>>
 }

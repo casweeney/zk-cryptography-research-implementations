@@ -3,6 +3,7 @@ use crate::composed::product_polynomial::ProductPolynomial;
 use crate::multilinear::evaluation_form::MultilinearPolynomial;
 
 // Sum Polynomial hold 2 or more multilinear polynomials and performs addition operations on them
+#[derive(Clone, Debug, PartialEq)]
 pub struct SumPolynomial<F: PrimeField> {
     pub product_polynomials: Vec<ProductPolynomial<F>>
 }
@@ -192,5 +193,20 @@ mod tests {
         let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
 
         assert_eq!(sum_polynomial.degree(), 2);
+    }
+
+    #[test]
+    fn test_number_of_variables() {
+        let poly1a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly1b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let product_poly1 = ProductPolynomial::new(vec![poly1a, poly1b]);
+
+        let poly2a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(1)]);
+        let poly2b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let product_poly2 = ProductPolynomial::new(vec![poly2a, poly2b]);
+
+        let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
+
+        assert_eq!(sum_polynomial.number_of_variables(), 2);
     }
 }
