@@ -8,10 +8,6 @@ pub struct GKRSumcheck<F: PrimeField> {
     pub number_of_variables: u32,
 }
 
-// no need init poly
-// prover needs to return challenges
-// Verify will use
-
 pub struct GKRSumcheckProverProof<F: PrimeField> {
     pub claimed_sum: F,
     pub round_univariate_polynomials: Vec<Vec<F>>,
@@ -131,5 +127,28 @@ pub fn field_element_to_bytes<F: PrimeField>(field_element: F) -> Vec<u8> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+    use ark_bn254::Fq;
+    use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
+    use polynomials::composed::product_polynomial::ProductPolynomial;
+
+    #[test]
+    fn test_generate_round_univariate() {
+        let poly1a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly2a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let product_poly1 = ProductPolynomial::new(vec![poly1a, poly2a]);
+
+        let poly1b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly2b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let product_poly2 = ProductPolynomial::new(vec![poly1b, poly2b]);
+
+
+        let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
+        let gkr_sumcheck = GKRSumcheck::init(sum_polynomial);
+
+
+        let univariate_poly = gkr_sumcheck.generate_round_univariate();
+
+        println!("Round Poly: {:?}", univariate_poly);
+        assert_eq!(univariate_poly, vec![Fq::from(0), Fq::from(12), Fq::from(48)]);
+    }
 }
