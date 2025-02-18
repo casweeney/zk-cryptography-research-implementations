@@ -304,6 +304,11 @@ dependencies = [
 [[package]]
 name = "gkr"
 version = "0.1.0"
+dependencies = [
+ "circuit",
+ "polynomials",
+ "sumcheck_protocol",
+]
 
 [[package]]
 name = "hashbrown"
