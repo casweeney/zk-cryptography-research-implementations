@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use circuit::arithmetic_circuit::Circuit;
-use sumcheck_protocol::gkr_sumcheck::gkr_sumcheck_protocol::GKRSumcheck;
+use sumcheck_protocol::gkr_sumcheck::gkr_sumcheck_protocol::{GKRSumcheck, GKRSumcheckProverProof};
 use polynomials::{
     composed::{product_polynomial, sum_polynomial},
     multilinear::evaluation_form::MultilinearPolynomial
@@ -8,7 +8,8 @@ use polynomials::{
 use transcripts::fiat_shamir::fiat_shamir_transcript::Transcript;
 
 pub struct Proof<F: PrimeField> {
-    claimed_sum: F
+    claimed_sum: F,
+    sumcheck_proofs: Vec<GKRSumcheckProverProof<F>>,
 }
 
 pub fn prove() {

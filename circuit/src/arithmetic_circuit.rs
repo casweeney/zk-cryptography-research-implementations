@@ -1,6 +1,12 @@
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
-use polynomials::{composed::{product_polynomial::ProductPolynomial, sum_polynomial::SumPolynomial}, multilinear::evaluation_form::MultilinearPolynomial};
+use polynomials::{
+    composed::{
+        product_polynomial::ProductPolynomial,
+        sum_polynomial::SumPolynomial
+    },
+    multilinear::evaluation_form::MultilinearPolynomial
+};
 
 pub enum Operator {
     Add,
