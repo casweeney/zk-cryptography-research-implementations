@@ -305,9 +305,11 @@ dependencies = [
 name = "gkr"
 version = "0.1.0"
 dependencies = [
+ "ark-ff",
  "circuit",
  "polynomials",
  "sumcheck_protocol",
+ "transcripts",
 ]
 
 [[package]]

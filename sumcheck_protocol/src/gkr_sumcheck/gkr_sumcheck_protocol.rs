@@ -63,7 +63,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
         transcript.append(&field_element_to_bytes(proof.claimed_sum));
         
         let mut current_sum = proof.claimed_sum;
-        let mut random_challenges = Vec::new();
+        let mut random_challenges = Vec::with_capacity(self.number_of_variables as usize);
 
         let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect();
 

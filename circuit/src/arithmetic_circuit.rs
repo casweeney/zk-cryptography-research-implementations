@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use std::marker::PhantomData;
-use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
+use polynomials::{composed::{product_polynomial::ProductPolynomial, sum_polynomial::SumPolynomial}, multilinear::evaluation_form::MultilinearPolynomial};
 
 pub enum Operator {
     Add,
@@ -132,6 +132,19 @@ impl <F: PrimeField>Circuit<F> {
         let mul_i_polynomial = MultilinearPolynomial::new(&mul_i_values);
 
         (add_i_polynomial, mul_i_polynomial)
+    }
+
+    pub fn fbc_polynomial(&mut self, layer_index: usize) -> SumPolynomial<F> {
+        let (add_i_polynomial, mul_i_polynomial) = self.add_i_and_mul_i_mle(layer_index);
+        let w_polynomial = self.w_i_polynomial(layer_index + 1);
+
+        let add_wb_wc = MultilinearPolynomial::polynomial_tensor_add(&w_polynomial, &w_polynomial);
+        let mul_wb_bc = MultilinearPolynomial::polynomial_tensor_mul(&w_polynomial, &w_polynomial);
+
+        let add_i_term = ProductPolynomial::new(vec![add_i_polynomial, add_wb_wc]);
+        let mul_i_term = ProductPolynomial::new(vec![mul_i_polynomial, mul_wb_bc]);
+
+        SumPolynomial::new(vec![add_i_term, mul_i_term])
     }
 }
 
