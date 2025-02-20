@@ -1,1 +1,1 @@
-pub mod protocol;
+pub mod gkr_protocol;
