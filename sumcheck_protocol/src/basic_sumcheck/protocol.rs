@@ -17,7 +17,7 @@ mod tests {
             Fr::from(11),
         ];
 
-        let prover = Prover::init(polynomial_evaluated_values);
+        let prover = Prover::init(&polynomial_evaluated_values);
 
         assert_eq!(prover.initial_claimed_sum, Fr::from(32));
         assert_eq!(prover.is_initialized, true);
@@ -36,7 +36,7 @@ mod tests {
             Fr::from(11),
         ];
 
-        let mut prover = Prover::init(polynomial_evaluated_values);
+        let mut prover = Prover::init(&polynomial_evaluated_values);
         let proof = prover.prove();
 
         let mut verifier: Verifier<Fr> = Verifier::init();
@@ -66,7 +66,7 @@ mod tests {
             Fr::from(0),
         ];
 
-        let mut prover = Prover::init(polynomial_evaluated_values);
+        let mut prover = Prover::init(&polynomial_evaluated_values);
         let proof = prover.prove();
 
         let mut verifier: Verifier<Fr> = Verifier::init();
@@ -96,7 +96,7 @@ mod tests {
             Fr::from(10),
         ];
 
-        let mut prover = Prover::init(polynomial_evaluated_values);
+        let mut prover = Prover::init(&polynomial_evaluated_values);
         let proof = prover.prove();
 
         let mut verifier: Verifier<Fr> = Verifier::init();

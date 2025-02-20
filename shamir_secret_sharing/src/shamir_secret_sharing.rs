@@ -26,7 +26,7 @@ pub fn shares<F: PrimeField>(secret: F, threshold: u64, number_shares: u64) -> V
     }
 
     // using the y_values as coefficients to create a polynomial
-    let polynomial = DensedUnivariatePolynomial::new(y_values);
+    let polynomial = DensedUnivariatePolynomial::new(&y_values);
 
     for i in 1..number_shares {
         shares.push((F::from(i), polynomial.evaluate(F::from(i))))
