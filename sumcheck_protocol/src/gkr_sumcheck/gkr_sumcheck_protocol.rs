@@ -65,7 +65,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
         let mut current_sum = proof.claimed_sum;
         let mut random_challenges = Vec::with_capacity(self.number_of_variables as usize);
 
-        let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect();
+        let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect(); // refactor to use the length of round_univariate_polynomials.
 
         for round_polynomial in &proof.round_univariate_polynomials {
             let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &round_polynomial);

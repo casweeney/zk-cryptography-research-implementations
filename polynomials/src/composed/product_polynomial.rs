@@ -37,9 +37,9 @@ impl <F: PrimeField>ProductPolynomial<F> {
         let mut evaluated_polynomials: Vec<MultilinearPolynomial<F>> = Vec::new();
 
         for polynomial in self.polynomials.iter() {
-            let partial_evaluation = MultilinearPolynomial::partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
+            let partially_evaluated_polynomial = MultilinearPolynomial::partial_evaluate(&polynomial.evaluated_values, evaluating_variable, value);
 
-            evaluated_polynomials.push(MultilinearPolynomial::new(&partial_evaluation));
+            evaluated_polynomials.push(partially_evaluated_polynomial);
         }
 
         evaluated_polynomials

@@ -27,7 +27,7 @@ impl <F: PrimeField>Prover<F> {
             self.round += 1;
             (self.initial_claimed_sum, univariate)
         } else {
-            self.current_polynomial = MultilinearPolynomial::partial_evaluate(&self.current_polynomial, 0, random_challenge);
+            self.current_polynomial = MultilinearPolynomial::partial_evaluate(&self.current_polynomial, 0, random_challenge).evaluated_values;
             let new_claimed_sum = self.current_polynomial.iter().sum();
 
             self.round += 1;

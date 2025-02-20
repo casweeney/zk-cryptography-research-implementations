@@ -56,7 +56,7 @@ impl <F: PrimeField>Prover<F> {
             let random_challenge: F = self.transcript.random_challenge_as_field_element();
 
             // Partial evaluate current polynomial using the random_challenge
-            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge);
+            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge).evaluated_values;
         }
 
         SumcheckProof {
