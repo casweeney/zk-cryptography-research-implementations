@@ -11,11 +11,11 @@ pub struct Prover<F: PrimeField> {
 }
 
 impl <F: PrimeField>Prover<F> {
-    pub fn new(evaluated_values: Vec<F>) -> Self {
+    pub fn new(evaluated_values: &Vec<F>) -> Self {
         Self {
             initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             initial_claimed_sum: evaluated_values.iter().sum(),
-            current_polynomial: evaluated_values,
+            current_polynomial: evaluated_values.to_vec(),
             round: 0
         }
     }
@@ -27,7 +27,7 @@ impl <F: PrimeField>Prover<F> {
             self.round += 1;
             (self.initial_claimed_sum, univariate)
         } else {
-            self.current_polynomial = MultilinearPolynomial::partial_evaluate(&self.current_polynomial, 0, random_challenge);
+            self.current_polynomial = MultilinearPolynomial::partial_evaluate(&self.current_polynomial, 0, random_challenge).evaluated_values;
             let new_claimed_sum = self.current_polynomial.iter().sum();
 
             self.round += 1;
@@ -63,7 +63,7 @@ pub struct Verifier<F: PrimeField> {
 }
 
 impl <F: PrimeField>Verifier<F> {
-    pub fn new(evaluated_values: Vec<F>) -> Self {
+    pub fn new(evaluated_values: &Vec<F>) -> Self {
         Self {
             initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             current_claimed_sum: F::zero(),
@@ -125,8 +125,8 @@ mod tests {
             Fr::from(6),
             Fr::from(11),
         ];
-        let mut prover = Prover::new(values.clone());
-        let mut verifier = Verifier::new(values.clone());
+        let mut prover = Prover::new(&values);
+        let mut verifier = Verifier::new(&values);
 
         // First round - no challenge needed for the prover
         let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round

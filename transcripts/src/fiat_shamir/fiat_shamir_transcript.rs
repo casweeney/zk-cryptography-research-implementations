@@ -29,7 +29,8 @@ impl FiatShamirTranscriptInterface for Transcript {
     /// Resets the state, then it appends the computed hash back to the hash function state so that future operation rounds can build on it
     fn sample_random_challenge(&mut self) -> [u8; 32] {
         let mut output_hash = [0; 32]; // fixed sized array of 32-bytes initially filled with zeros
-        output_hash.copy_from_slice(&self.hasher.finalize_reset());
+        output_hash.copy_from_slice(&self.hasher.clone().finalize());
+
         self.hasher.update(output_hash);
 
         output_hash

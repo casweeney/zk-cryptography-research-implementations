@@ -6,9 +6,9 @@ pub struct DensedUnivariatePolynomial<F: PrimeField> {
 }
 
 impl <F: PrimeField>DensedUnivariatePolynomial<F> {
-    pub fn new(coeffs: Vec<F>) -> Self {
+    pub fn new(coeffs: &Vec<F>) -> Self {
         Self {
-            coefficients: coeffs
+            coefficients: coeffs.to_vec()
         }
     }
 
@@ -59,7 +59,7 @@ impl <F: PrimeField>DensedUnivariatePolynomial<F> {
         // passing in the interpolating set, which is the x_values.
         // Lastly using add_polynomials to sum up each polynomial derived from lagrange basis
         for (index, x_value) in x_values.iter().enumerate() {
-            let current_polynomial = lagrange_basis(y_values[index], *x_value, x_values.clone());
+            let current_polynomial = lagrange_basis(&y_values[index], x_value, &x_values);
             final_interpolated_polynomial = add_polynomials(final_interpolated_polynomial, current_polynomial)
         }
 
@@ -69,25 +69,25 @@ impl <F: PrimeField>DensedUnivariatePolynomial<F> {
     }
 }
 
-fn lagrange_basis<F: PrimeField>(y_point: F, focus_x_point: F, interpolating_set: Vec<F>) -> Vec<F> {
+fn lagrange_basis<F: PrimeField>(y_point: &F, focus_x_point: &F, interpolating_set: &Vec<F>) -> Vec<F> {
     // numerator
     let mut numerator = vec![F::one()];
 
     // (x-1)(x-2) => [1, -1][1, -2] => Reverse it based on index => [-1, 1][-2, 1]
     // Notice that in the reversed for, 1 is always constant, and the first values in the interpolating set are always negative
     for x in interpolating_set.iter() {
-        if *x != focus_x_point {
+        if *x != *focus_x_point {
             numerator = multiply_polynomials(numerator, vec![- *x, F::one()]);
         }
     }
 
     // denominator
-    let univariate_poly: DensedUnivariatePolynomial<F> = DensedUnivariatePolynomial::new(numerator.clone());
-    let denominator = univariate_poly.evaluate(focus_x_point);
+    let univariate_poly: DensedUnivariatePolynomial<F> = DensedUnivariatePolynomial::new(&numerator);
+    let denominator = univariate_poly.evaluate(*focus_x_point);
 
     // numerator/denominator is the same this as (1/denominator) * numerator
     // y_point * 1 = y_point
-    let interpolated_polynomial = scalar_mul(y_point/denominator, numerator);
+    let interpolated_polynomial = scalar_mul(*y_point/denominator, numerator);
 
     interpolated_polynomial
 }
@@ -154,7 +154,7 @@ mod tests {
 
     fn test_setup() -> DensedUnivariatePolynomial<Fq> {
         let set_of_points = vec![Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)];
-        let polynomial = DensedUnivariatePolynomial::new(set_of_points.clone());
+        let polynomial = DensedUnivariatePolynomial::new(&set_of_points);
 
         polynomial
     }

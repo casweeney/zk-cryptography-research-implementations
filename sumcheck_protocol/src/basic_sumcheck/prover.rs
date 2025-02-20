@@ -20,8 +20,8 @@ pub struct SumcheckProof<F: PrimeField> {
 }
 
 impl <F: PrimeField>Prover<F> {
-    pub fn init(polynomial_evaluated_values: Vec<F>) -> Self {
-        let polynomial = MultilinearPolynomial::new(&polynomial_evaluated_values.clone());
+    pub fn init(polynomial_evaluated_values: &Vec<F>) -> Self {
+        let polynomial = MultilinearPolynomial::new(&polynomial_evaluated_values);
         let transcript = Transcript::new();
 
         Prover {
@@ -56,7 +56,7 @@ impl <F: PrimeField>Prover<F> {
             let random_challenge: F = self.transcript.random_challenge_as_field_element();
 
             // Partial evaluate current polynomial using the random_challenge
-            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge);
+            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge).evaluated_values;
         }
 
         SumcheckProof {
@@ -95,7 +95,7 @@ mod test {
     #[test]
     fn test_prover_init() {
         let evaluated_values = vec![Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(8)];
-        let prover = Prover::init(evaluated_values.clone());
+        let prover = Prover::init(&evaluated_values);
 
         assert_eq!(prover.initial_claimed_sum, Fq::from(11));
         assert_eq!(prover.initial_polynomial.evaluated_values, evaluated_values);

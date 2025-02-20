@@ -79,7 +79,7 @@ impl <F: PrimeField>SumPolynomial<F> {
     }
 
     pub fn degree(&self) -> usize {
-        self.product_polynomials.len()
+        self.product_polynomials[0].degree()
     }
 
     pub fn number_of_variables(&self) -> u32 {
