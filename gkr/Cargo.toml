@@ -9,3 +9,4 @@ sumcheck_protocol = { path = "../sumcheck_protocol" }
 circuit = { path = "../circuit" }
 transcripts = { path = "../transcripts"}
 ark-ff = "0.5.0"
+ark-bn254 = "0.5.0"
