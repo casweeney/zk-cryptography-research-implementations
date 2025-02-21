@@ -8,6 +8,7 @@ pub struct GKRSumcheck<F: PrimeField> {
     pub number_of_variables: u32,
 }
 
+#[derive(Clone, Debug)]
 pub struct GKRSumcheckProverProof<F: PrimeField> {
     pub claimed_sum: F,
     pub round_univariate_polynomials: Vec<Vec<F>>,
@@ -50,6 +51,8 @@ impl <F: PrimeField>GKRSumcheck<F> {
             current_polynomial = current_polynomial.partial_evaluate(0, random_challenge);
         }
 
+        println!("Random from Sumcheck Prover: {:?}", random_challenges);
+
         GKRSumcheckProverProof {
             claimed_sum: claimed_sum,
             round_univariate_polynomials,
@@ -59,6 +62,9 @@ impl <F: PrimeField>GKRSumcheck<F> {
     }
 
     pub fn verify(&self, proof: &GKRSumcheckProverProof<F>) -> GKRSumcheckVerifierProof<F> {
+
+        println!("Random from Sumcheck Verifier: {:?}", proof.random_challenges);
+
         let mut transcript = Transcript::new();
         transcript.append(&field_element_to_bytes(proof.claimed_sum));
         
@@ -73,12 +79,16 @@ impl <F: PrimeField>GKRSumcheck<F> {
             let eval_at_zero = univariate_poly.evaluate(F::zero());
             let eval_at_one = univariate_poly.evaluate(F::one());
 
+            println!("It got HERE Sumcheck 1");
+
             if eval_at_zero + eval_at_one != current_sum {
                 return GKRSumcheckVerifierProof {
                     is_proof_valid: false,
                     random_challenges: vec![],
                 }
             }
+
+            println!("It got HERE Sumcheck 2");
 
             transcript.append(&univariate_to_bytes(round_polynomial));
 
