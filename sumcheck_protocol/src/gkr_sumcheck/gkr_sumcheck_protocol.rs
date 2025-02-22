@@ -3,6 +3,7 @@ use polynomials::composed::sum_polynomial::SumPolynomial;
 use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface};
 use ark_ff::{PrimeField, BigInteger};
 
+#[derive(Clone, Debug)]
 pub struct GKRSumcheck<F: PrimeField> {
     pub sum_polynomial: SumPolynomial<F>,
     pub number_of_variables: u32,
@@ -16,6 +17,7 @@ pub struct GKRSumcheckProverProof<F: PrimeField> {
     pub degree: usize
 }
 
+#[derive(Clone, Debug)]
 pub struct GKRSumcheckVerifierProof<F: PrimeField> {
     pub is_proof_valid: bool,
     pub random_challenges: Vec<F>,
@@ -40,7 +42,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
         transcript.append(&field_element_to_bytes(claimed_sum));
 
         for _round in 0..self.number_of_variables {
-            let univariate = self.generate_round_univariate();
+            let univariate = GKRSumcheck::generate_round_univariate(&current_polynomial);
             transcript.append(&univariate_to_bytes(&univariate));
 
             round_univariate_polynomials.push(univariate);
@@ -51,8 +53,6 @@ impl <F: PrimeField>GKRSumcheck<F> {
             current_polynomial = current_polynomial.partial_evaluate(0, random_challenge);
         }
 
-        println!("Random from Sumcheck Prover: {:?}", random_challenges);
-
         GKRSumcheckProverProof {
             claimed_sum: claimed_sum,
             round_univariate_polynomials,
@@ -62,16 +62,13 @@ impl <F: PrimeField>GKRSumcheck<F> {
     }
 
     pub fn verify(&self, proof: &GKRSumcheckProverProof<F>) -> GKRSumcheckVerifierProof<F> {
-
-        println!("Random from Sumcheck Verifier: {:?}", proof.random_challenges);
-
         let mut transcript = Transcript::new();
         transcript.append(&field_element_to_bytes(proof.claimed_sum));
         
         let mut current_sum = proof.claimed_sum;
         let mut random_challenges = Vec::with_capacity(self.number_of_variables as usize);
 
-        let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect(); // refactor to use the length of round_univariate_polynomials.
+        let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect();
 
         for round_polynomial in &proof.round_univariate_polynomials {
             let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &round_polynomial);
@@ -79,16 +76,12 @@ impl <F: PrimeField>GKRSumcheck<F> {
             let eval_at_zero = univariate_poly.evaluate(F::zero());
             let eval_at_one = univariate_poly.evaluate(F::one());
 
-            println!("It got HERE Sumcheck 1");
-
             if eval_at_zero + eval_at_one != current_sum {
                 return GKRSumcheckVerifierProof {
                     is_proof_valid: false,
                     random_challenges: vec![],
                 }
             }
-
-            println!("It got HERE Sumcheck 2");
 
             transcript.append(&univariate_to_bytes(round_polynomial));
 
@@ -105,15 +98,15 @@ impl <F: PrimeField>GKRSumcheck<F> {
         }
     }
 
-    pub fn generate_round_univariate(&self) -> Vec<F> {
-        let degree = self.sum_polynomial.degree();
+    pub fn generate_round_univariate(current_polynomial: &SumPolynomial<F>) -> Vec<F> {
+        let degree = current_polynomial.degree();
         let num_evaluations = degree + 1;
 
         let mut evaluations = Vec::with_capacity(num_evaluations);
 
         for i in 0..num_evaluations {
             let value = F::from(i as u64);
-            let partial_eval_sum_poly = self.sum_polynomial.partial_evaluate(0, value); // holding Vec<ProductPoly> : length of 2
+            let partial_eval_sum_poly = current_polynomial.partial_evaluate(0, value); // holding Vec<ProductPoly> : length of 2
             let evaluation = partial_eval_sum_poly.add_polynomials_element_wise().evaluated_values.iter().sum();
 
             evaluations.push(evaluation)
@@ -153,12 +146,32 @@ mod tests {
 
 
         let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
-        let gkr_sumcheck = GKRSumcheck::init(sum_polynomial);
+        GKRSumcheck::init(sum_polynomial.clone());
 
 
-        let univariate_poly = gkr_sumcheck.generate_round_univariate();
+        let univariate_poly = GKRSumcheck::generate_round_univariate(&sum_polynomial);
 
         println!("Round Poly: {:?}", univariate_poly);
         assert_eq!(univariate_poly, vec![Fq::from(0), Fq::from(12), Fq::from(48)]);
+    }
+
+    #[test]
+    fn test_prover_and_verifier() {
+        let poly1a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly2a = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let product_poly1 = ProductPolynomial::new(vec![poly1a, poly2a]);
+
+        let poly1b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(2)]);
+        let poly2b = MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3)]);
+        let product_poly2 = ProductPolynomial::new(vec![poly1b, poly2b]);
+
+
+        let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
+        let mut gkr_sumcheck = GKRSumcheck::init(sum_polynomial);
+
+        let result = gkr_sumcheck.prove(Fq::from(12));
+        let verified = gkr_sumcheck.verify(&result);
+
+        assert_eq!(verified.is_proof_valid, true);
     }
 }

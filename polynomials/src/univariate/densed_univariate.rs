@@ -2,7 +2,7 @@ use ark_ff::PrimeField;
 
 #[derive(Debug)]
 pub struct DensedUnivariatePolynomial<F: PrimeField> {
-    coefficients: Vec<F>
+    pub coefficients: Vec<F>
 }
 
 impl <F: PrimeField>DensedUnivariatePolynomial<F> {
