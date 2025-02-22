@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 use circuit::arithmetic_circuit::Circuit;
-use sumcheck_protocol::gkr_sumcheck::gkr_sumcheck_protocol::{GKRSumcheck, GKRSumcheckProverProof};
+use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{GKRSumcheck, GKRSumcheckProverProof};
 use polynomials::{
     composed::{product_polynomial::ProductPolynomial, sum_polynomial::SumPolynomial},
     multilinear::evaluation_form::MultilinearPolynomial
