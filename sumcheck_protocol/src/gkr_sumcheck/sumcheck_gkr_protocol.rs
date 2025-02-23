@@ -21,6 +21,7 @@ pub struct GKRSumcheckProverProof<F: PrimeField> {
 pub struct GKRSumcheckVerifierProof<F: PrimeField> {
     pub is_proof_valid: bool,
     pub random_challenges: Vec<F>,
+    pub last_claimed_sum: F
 }
 
 impl <F: PrimeField>GKRSumcheck<F> {
@@ -80,6 +81,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
                 return GKRSumcheckVerifierProof {
                     is_proof_valid: false,
                     random_challenges: vec![],
+                    last_claimed_sum: current_sum
                 }
             }
 
@@ -94,7 +96,8 @@ impl <F: PrimeField>GKRSumcheck<F> {
 
         GKRSumcheckVerifierProof {
             is_proof_valid: true,
-            random_challenges
+            random_challenges,
+            last_claimed_sum: current_sum
         }
     }
 
