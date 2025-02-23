@@ -1,5 +1,7 @@
+use std::ptr;
+
 use ark_ff::PrimeField;
-use circuit::arithmetic_circuit::Circuit;
+use circuit::arithmetic_circuit::{Circuit, Layer};
 use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{
     GKRSumcheckProverProof,
     prove as sumcheck_prove,
@@ -27,6 +29,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
     let mut wb_evals= Vec::new();
     let mut wc_evals = Vec::new();
 
+    // handling layer 0 first
     let (add_i_abc_polynomial, mul_i_abc_polynomial) = circuit.add_i_and_mul_i_mle(0);
     let mut w0_polynomial = circuit.w_i_polynomial(0);
 
@@ -38,7 +41,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
     transcript.append(&w0_polynomial.convert_to_bytes());
     let random_challenge_a: F = transcript.random_challenge_as_field_element(); // ra
-    let claimed_sum = w0_polynomial.evaluate(&vec![random_challenge_a]); // m0
+    let mut claimed_sum = w0_polynomial.evaluate(&vec![random_challenge_a]); // m0
 
     let add_i_bc = MultilinearPolynomial::partial_evaluate(&add_i_abc_polynomial.evaluated_values, 0, random_challenge_a);
     let mul_i_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc_polynomial.evaluated_values, 0, random_challenge_a);
@@ -53,14 +56,11 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
     // Evaluate wb and wc to be used by verifier
     let sumcheck_challenges = sumcheck_proof.random_challenges;
-    let middle = sumcheck_challenges.len() / 2;
-    let (rb_values, rc_values) = sumcheck_challenges.split_at(middle);
+    let (wb_evaluation, wc_evaluation) = evaluate_wb_wc(&sumcheck_challenges, &wb_poly, &wc_poly);
 
-    let wb_poly_evaluated = wb_poly.evaluate(&rb_values.to_vec());
-    let wc_poly_evaluated = wc_poly.evaluate(&rc_values.to_vec());
+    wb_evals.push(wb_evaluation);
+    wc_evals.push(wc_evaluation);
 
-    wb_evals.push(wb_poly_evaluated);
-    wc_evals.push(wc_poly_evaluated);
 
 
     // Handling subsequent layers
@@ -110,13 +110,10 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
         if layer_index < circuit.layers.len() - 1 {
             let sumcheck_challenges = layer_proof.random_challenges;
-            let middle = sumcheck_challenges.len() / 2;
-            let (rb_values, rc_values) = sumcheck_challenges.split_at(middle);
-            let wb_poly_evaluated = wb_poly.evaluate(&rb_values.to_vec());
-            let wc_poly_evaluated = wc_poly.evaluate(&rc_values.to_vec());
+            let (wb_evaluation, wc_evaluation) = evaluate_wb_wc(&sumcheck_challenges, &wb_poly, &wc_poly);
 
-            wb_evals.push(wb_poly_evaluated);
-            wc_evals.push(wc_poly_evaluated);
+            wb_evals.push(wb_evaluation);
+            wc_evals.push(wc_evaluation);
         }
     }
 
@@ -130,6 +127,10 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
 pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: &Vec<F>) -> bool {
     let mut transcript = Transcript::new();
+
+    println!("wb polys: {:?}", proof.wb_evals);
+    println!("wc polys: {:?}", proof.wc_evals);
+
 
     // layer 0 verification
     let (add_i_abc_polynomial, mul_i_abc_polynomial) = circuit.add_i_and_mul_i_mle(0);
@@ -172,6 +173,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
     for layer_index in 1..circuit.layers.len() {
         let (add_i_abc_polynomial, mul_i_abc_polynomial) = circuit.add_i_and_mul_i_mle(layer_index);
 
+        // Use the current layer's polynomial for verification
         let current_wb_poly = circuit.w_i_polynomial(layer_index);
         let current_wc_poly = circuit.w_i_polynomial(layer_index);
 
@@ -186,6 +188,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
         let beta: F = transcript.random_challenge_as_field_element();
 
         let claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
+
         if claimed_sum != proof.sumcheck_proofs[layer_index].claimed_sum {
             return false;
         }
@@ -199,14 +202,11 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
             rc_values.to_vec()
         );
 
-        let w_i = if layer_index == circuit.layer_evaluations.len() - 1 {
-            MultilinearPolynomial::new(&inputs.to_vec())
+        let (wb_poly, wc_poly) = if layer_index == circuit.layer_evaluations.len() - 1 {
+            (MultilinearPolynomial::new(&inputs.to_vec()), MultilinearPolynomial::new(&inputs.to_vec()))
         } else {
-            circuit.w_i_polynomial(layer_index + 1)
+            (circuit.w_i_polynomial(layer_index + 1), circuit.w_i_polynomial(layer_index + 1))
         };
-
-        let wb_poly = w_i.clone();
-        let wc_poly = w_i;
 
         let layer_fbc = compute_fbc_polynomial(
             new_add_i,
@@ -252,7 +252,9 @@ pub fn compute_new_add_i_mul_i<F: PrimeField>(
     rb_values: Vec<F>,
     rc_values: Vec<F>,
 ) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
-
+    // Partial evaluating add_i_abc and mul_i_abc at all the random values using loop
+    // We first evaluated at with random values at 0 index, so that we don't have to clone
+    // rb => random challenges for b, rc => random challenges for c
     let mut add_rb_bc = MultilinearPolynomial::partial_evaluate(&add_i_abc.evaluated_values, 0, rb_values[0]);
     let mut mul_rb_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc.evaluated_values, 0, rb_values[0]);
 
@@ -273,6 +275,24 @@ pub fn compute_new_add_i_mul_i<F: PrimeField>(
     let new_mul_i = MultilinearPolynomial::add_polynomials(&mul_rb_bc.scalar_mul(alpha), &mul_rc_bc.scalar_mul(beta));
 
     (new_add_i, new_mul_i)
+}
+
+pub fn evaluate_wb_wc<F: PrimeField>(sumcheck_challenges: &Vec<F>, wb_poly: &MultilinearPolynomial<F>, wc_poly: &MultilinearPolynomial<F>) -> (F, F) {
+    let middle = sumcheck_challenges.len() / 2;
+    let (rb_values, rc_values) = sumcheck_challenges.split_at(middle);
+
+    let wb_poly_evaluated = wb_poly.evaluate(&rb_values.to_vec());
+    let wc_poly_evaluated = wc_poly.evaluate(&rc_values.to_vec());
+
+    (wb_poly_evaluated, wc_poly_evaluated)
+}
+
+pub fn verifier_claim<F: PrimeField> () -> F {
+    todo!()
+}
+
+pub fn verifier_merged_claim<F: PrimeField> () -> F {
+    todo!()
 }
 
 #[cfg(test)]
