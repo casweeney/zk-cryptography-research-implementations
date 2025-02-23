@@ -1,6 +1,10 @@
 use ark_ff::PrimeField;
 use circuit::arithmetic_circuit::Circuit;
-use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{GKRSumcheck, GKRSumcheckProverProof};
+use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{
+    GKRSumcheckProverProof,
+    prove as sumcheck_prove,
+    verify as sumcheck_verify
+};
 use polynomials::{
     composed::{product_polynomial::ProductPolynomial, sum_polynomial::SumPolynomial},
     multilinear::evaluation_form::MultilinearPolynomial
@@ -10,7 +14,9 @@ use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::Fi
 #[derive(Clone, Debug)]
 pub struct Proof<F: PrimeField> {
     pub claimed_output: F,
-    pub sumcheck_proofs: Vec<GKRSumcheckProverProof<F>>
+    pub sumcheck_proofs: Vec<GKRSumcheckProverProof<F>>,
+    pub wb_evals: Vec<F>,
+    pub wc_evals: Vec<F>
 }
 
 pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<F> {
@@ -18,6 +24,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
     let mut transcript = Transcript::new();
     let mut layer_proofs = Vec::new();
+    let mut wb_evals= Vec::new();
+    let mut wc_evals = Vec::new();
 
     let (add_i_abc_polynomial, mul_i_abc_polynomial) = circuit.add_i_and_mul_i_mle(0);
     let mut w0_polynomial = circuit.w_i_polynomial(0);
@@ -40,9 +48,20 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
 
     let w0_fbc = compute_fbc_polynomial(add_i_bc, mul_i_bc, &wb_poly, &wc_poly);
 
-    let mut sumcheck = GKRSumcheck::init(w0_fbc);
-    let sumcheck_proof = sumcheck.prove(claimed_sum, &mut transcript);
-    layer_proofs.push(sumcheck_proof);
+    let sumcheck_proof = sumcheck_prove(w0_fbc, claimed_sum, &mut transcript);
+    layer_proofs.push(sumcheck_proof.clone());
+
+    // Evaluate wb and wc to be used by verifier
+    let sumcheck_challenges = sumcheck_proof.random_challenges;
+    let middle = sumcheck_challenges.len() / 2;
+    let (rb_values, rc_values) = sumcheck_challenges.split_at(middle);
+
+    let wb_poly_evaluated = wb_poly.evaluate(&rb_values.to_vec());
+    let wc_poly_evaluated = wc_poly.evaluate(&rc_values.to_vec());
+
+    wb_evals.push(wb_poly_evaluated);
+    wc_evals.push(wc_poly_evaluated);
+
 
     // Handling subsequent layers
     for layer_index in 1..circuit.layers.len() {
@@ -54,8 +73,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
         
         // use the randomness from the sumcheck proof, split into two vec! for rb and rc
         let previous_layer_challenges = &layer_proofs[layer_index - 1].random_challenges;
-        let mid = previous_layer_challenges.len() / 2;
-        let (rb_values, rc_values) = previous_layer_challenges.split_at(mid);
+        let middle = previous_layer_challenges.len() / 2;
+        let (rb_values, rc_values) = previous_layer_challenges.split_at(middle);
 
         transcript.append(&current_wb_poly.convert_to_bytes());
         transcript.append(&current_wc_poly.convert_to_bytes());
@@ -72,34 +91,44 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
             rc_values.to_vec()
         );
 
-        // get wb and wc of the next layer
-        let next_wb_poly = circuit.w_i_polynomial(layer_index + 1);
-        let next_wc_poly = circuit.w_i_polynomial(layer_index + 1);
+        // get wb and wc : which is from the lower layer
+        let wb_poly = circuit.w_i_polynomial(layer_index + 1);
+        let wc_poly = circuit.w_i_polynomial(layer_index + 1);
 
         let layer_fbc = compute_fbc_polynomial(
             new_add_i,
             new_mul_i,
-            &next_wb_poly,
-            &next_wc_poly
+            &wb_poly,
+            &wc_poly
         );
-
-        let mut sumcheck = GKRSumcheck::init(layer_fbc);
 
         // Get claimed sum using linear combination form
         let claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
 
-        let layer_proof = sumcheck.prove(claimed_sum, &mut transcript);
+        let layer_proof = sumcheck_prove(layer_fbc, claimed_sum, &mut transcript);
+        layer_proofs.push(layer_proof.clone());
 
-        layer_proofs.push(layer_proof);
+        if layer_index < circuit.layers.len() - 1 {
+            let sumcheck_challenges = layer_proof.random_challenges;
+            let middle = sumcheck_challenges.len() / 2;
+            let (rb_values, rc_values) = sumcheck_challenges.split_at(middle);
+            let wb_poly_evaluated = wb_poly.evaluate(&rb_values.to_vec());
+            let wc_poly_evaluated = wc_poly.evaluate(&rc_values.to_vec());
+
+            wb_evals.push(wb_poly_evaluated);
+            wc_evals.push(wc_poly_evaluated);
+        }
     }
 
     Proof {
         sumcheck_proofs: layer_proofs,
-        claimed_output: claimed_sum
+        claimed_output: claimed_sum,
+        wb_evals,
+        wc_evals
     }
 }
 
-pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool {
+pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: &Vec<F>) -> bool {
     let mut transcript = Transcript::new();
 
     // layer 0 verification
@@ -115,7 +144,10 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
     transcript.append(&w0_polynomial.convert_to_bytes());
     let random_challenge_a: F = transcript.random_challenge_as_field_element();
 
-    let _claimed_sum = w0_polynomial.evaluate(&vec![random_challenge_a]);
+    let claimed_sum = w0_polynomial.evaluate(&vec![random_challenge_a]);
+    if claimed_sum != proof.sumcheck_proofs[0].claimed_sum {
+        return false;
+    }
 
     let add_i_bc = MultilinearPolynomial::partial_evaluate(&add_i_abc_polynomial.evaluated_values, 0, random_challenge_a);
     let mul_i_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc_polynomial.evaluated_values, 0, random_challenge_a);
@@ -125,9 +157,14 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
 
     let w0_fbc = compute_fbc_polynomial(add_i_bc, mul_i_bc, &wb_poly, &wc_poly);
 
-    let sumcheck = GKRSumcheck::init(w0_fbc);
+    // Get the verification result
+    let verify_result = sumcheck_verify(&proof.sumcheck_proofs[0], &mut transcript);
+    if !verify_result.is_proof_valid {
+        return false;
+    }
 
-    if !sumcheck.verify(&proof.sumcheck_proofs[0], &mut transcript).is_proof_valid {
+    let w0_evaluation = w0_fbc.evaluate(&verify_result.random_challenges);
+    if verify_result.last_claimed_sum != w0_evaluation {
         return false;
     }
 
@@ -148,6 +185,11 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
         let alpha: F = transcript.random_challenge_as_field_element();
         let beta: F = transcript.random_challenge_as_field_element();
 
+        let claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
+        if claimed_sum != proof.sumcheck_proofs[layer_index].claimed_sum {
+            return false;
+        }
+
         let (new_add_i, new_mul_i) = compute_new_add_i_mul_i(
             alpha,
             beta,
@@ -157,20 +199,29 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
             rc_values.to_vec()
         );
 
-        let next_wb_poly = circuit.w_i_polynomial(layer_index + 1);
-        let next_wc_poly = circuit.w_i_polynomial(layer_index + 1);
+        let w_i = if layer_index == circuit.layer_evaluations.len() - 1 {
+            MultilinearPolynomial::new(&inputs.to_vec())
+        } else {
+            circuit.w_i_polynomial(layer_index + 1)
+        };
+
+        let wb_poly = w_i.clone();
+        let wc_poly = w_i;
 
         let layer_fbc = compute_fbc_polynomial(
             new_add_i,
             new_mul_i,
-            &next_wb_poly,
-            &next_wc_poly
+            &wb_poly,
+            &wc_poly
         );
 
-        let sumcheck = GKRSumcheck::init(layer_fbc);
-        let _claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
+        let verify_result = sumcheck_verify(&proof.sumcheck_proofs[layer_index], &mut transcript);
+        if !verify_result.is_proof_valid {
+            return false;
+        }
 
-        if !sumcheck.verify(&proof.sumcheck_proofs[layer_index], &mut transcript).is_proof_valid {
+        let layer_evaluation = layer_fbc.evaluate(&verify_result.random_challenges);
+        if verify_result.last_claimed_sum != layer_evaluation {
             return false;
         }
     }
@@ -244,7 +295,7 @@ mod tests {
 
         let proof = prove(&mut circuit, &inputs);
 
-        assert_eq!(verify(&mut circuit, proof), true);
+        assert_eq!(verify(&mut circuit, proof, &inputs), true);
     }
 
     #[test]
@@ -280,6 +331,6 @@ mod tests {
 
         let proof = prove(&mut circuit, &inputs);
 
-        assert_eq!(verify(&mut circuit, proof), true);
+        assert_eq!(verify(&mut circuit, proof, &inputs), true);
     }
 }
