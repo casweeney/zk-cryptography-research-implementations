@@ -41,7 +41,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
     let w0_fbc = compute_fbc_polynomial(add_i_bc, mul_i_bc, &wb_poly, &wc_poly);
 
     let mut sumcheck = GKRSumcheck::init(w0_fbc);
-    let sumcheck_proof = sumcheck.prove(claimed_sum);
+    let sumcheck_proof = sumcheck.prove(claimed_sum, &mut transcript);
     layer_proofs.push(sumcheck_proof);
 
     // Handling subsequent layers
@@ -88,7 +88,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &Vec<F>) -> Proof<
         // Get claimed sum using linear combination form
         let claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
 
-        let layer_proof = sumcheck.prove(claimed_sum);
+        let layer_proof = sumcheck.prove(claimed_sum, &mut transcript);
 
         layer_proofs.push(layer_proof);
     }
@@ -127,7 +127,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
 
     let sumcheck = GKRSumcheck::init(w0_fbc);
 
-    if !sumcheck.verify(&proof.sumcheck_proofs[0]).is_proof_valid {
+    if !sumcheck.verify(&proof.sumcheck_proofs[0], &mut transcript).is_proof_valid {
         return false;
     }
 
@@ -170,7 +170,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>) -> bool 
         let sumcheck = GKRSumcheck::init(layer_fbc);
         let _claimed_sum = alpha * current_wb_poly.evaluate(&rb_values.to_vec()) + beta * current_wc_poly.evaluate(&rc_values.to_vec());
 
-        if !sumcheck.verify(&proof.sumcheck_proofs[layer_index]).is_proof_valid {
+        if !sumcheck.verify(&proof.sumcheck_proofs[layer_index], &mut transcript).is_proof_valid {
             return false;
         }
     }

@@ -34,8 +34,8 @@ impl <F: PrimeField>GKRSumcheck<F> {
         }
     }
 
-    pub fn prove(&mut self, claimed_sum: F) -> GKRSumcheckProverProof<F> {
-        let mut transcript = Transcript::new();
+    pub fn prove(&mut self, claimed_sum: F, transcript: &mut Transcript) -> GKRSumcheckProverProof<F> {
+        
         let mut round_univariate_polynomials = Vec::new();
         let mut random_challenges = Vec::with_capacity(self.number_of_variables as usize);
         let mut current_polynomial = self.sum_polynomial.clone();
@@ -62,8 +62,7 @@ impl <F: PrimeField>GKRSumcheck<F> {
         }
     }
 
-    pub fn verify(&self, proof: &GKRSumcheckProverProof<F>) -> GKRSumcheckVerifierProof<F> {
-        let mut transcript = Transcript::new();
+    pub fn verify(&self, proof: &GKRSumcheckProverProof<F>, transcript: &mut Transcript) -> GKRSumcheckVerifierProof<F> {
         transcript.append(&field_element_to_bytes(proof.claimed_sum));
         
         let mut current_sum = proof.claimed_sum;
@@ -172,8 +171,11 @@ mod tests {
         let sum_polynomial = SumPolynomial::new(vec![product_poly1, product_poly2]);
         let mut gkr_sumcheck = GKRSumcheck::init(sum_polynomial);
 
-        let result = gkr_sumcheck.prove(Fq::from(12));
-        let verified = gkr_sumcheck.verify(&result);
+        let mut prover_transcript = Transcript::new();
+        let mut verifier_transcript = Transcript::new();
+
+        let result = gkr_sumcheck.prove(Fq::from(12), &mut prover_transcript);
+        let verified = gkr_sumcheck.verify(&result, &mut verifier_transcript);
 
         assert_eq!(verified.is_proof_valid, true);
     }
