@@ -22,7 +22,7 @@ pub struct Layer {
 pub struct Circuit<F: PrimeField> {
     pub layers: Vec<Layer>,
     // Track intermediate values at each layer
-    pub layer_evaluations: Vec<Vec<F>>, 
+    pub layer_evaluations: Vec<Vec<F>>,
     _phantom: PhantomData<F>
 }
 

@@ -9,14 +9,14 @@ pub struct MultilinearPolynomial<F: PrimeField> {
 }
 
 impl <F: PrimeField>MultilinearPolynomial<F> {
-    pub fn new(evaluated_values: &Vec<F>) -> Self {
+    pub fn new(evaluated_values: &[F]) -> Self {
         Self {
             evaluated_values: evaluated_values.to_vec()
         }
     }
 
     // The evaluate function calls the partial evaluate multiple times
-    pub fn evaluate(&self, values: &Vec<F>) -> F {
+    pub fn evaluate(&self, values: &[F]) -> F {
         let mut r_polynomial = self.clone();
         let expected_number_of_partial_eval = values.len();
 
