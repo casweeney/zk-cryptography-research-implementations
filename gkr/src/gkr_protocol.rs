@@ -146,8 +146,8 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
             evaluate_wb_wc(&wb_poly, &wc_poly, &sumcheck_challenges)
         };
 
-        let expected_final_value = if layer_index == 0 {
-            verifier_claim(
+        let expected_claim = if layer_index == 0 {
+            compute_verifier_initial_claim(
                 circuit,
                 layer_index,
                 random_challenge_a,
@@ -156,7 +156,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
                 wc_evaluation
             )
         } else {
-            verifier_merged_claim(
+            compute_verifier_folded_claim(
                 circuit,
                 layer_index,
                 &sumcheck_challenges,
@@ -168,7 +168,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
             )
         };
 
-        if expected_final_value != verify_result.last_claimed_sum {
+        if expected_claim != verify_result.last_claimed_sum {
             return false;
         }
 
@@ -245,7 +245,7 @@ pub fn evaluate_wb_wc<F: PrimeField>(
     (wb_poly_evaluated, wc_poly_evaluated)
 }
 
-pub fn verifier_claim<F: PrimeField> (
+pub fn compute_verifier_initial_claim<F: PrimeField> (
     circuit: &mut Circuit<F>,
     layer_index: usize,
     initial_random_challenge: F,
@@ -274,7 +274,7 @@ pub fn verifier_claim<F: PrimeField> (
     (add_i_r * (wb_evaluation + wc_evaluation)) + (mul_i_r * (wb_evaluation * wc_evaluation))
 }
 
-pub fn verifier_merged_claim<F: PrimeField> (
+pub fn compute_verifier_folded_claim<F: PrimeField> (
     circuit: &mut Circuit<F>,
     layer_index: usize,
     current_sumcheck_challenges: &[F],
