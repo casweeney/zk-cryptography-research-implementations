@@ -217,9 +217,9 @@ pub fn compute_new_add_i_mul_i<F: PrimeField>(
     // We first evaluated at with random values at 0 index, so that we don't have to clone
     // rb => random challenges for b, rc => random challenges for c
     let mut add_rb_bc = MultilinearPolynomial::partial_evaluate(&add_i_abc.evaluated_values, 0, rb_values[0]);
-    let mut mul_rb_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc.evaluated_values, 0, rb_values[0]);
-
     let mut add_rc_bc = MultilinearPolynomial::partial_evaluate(&add_i_abc.evaluated_values, 0, rc_values[0]);
+
+    let mut mul_rb_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc.evaluated_values, 0, rb_values[0]);
     let mut mul_rc_bc = MultilinearPolynomial::partial_evaluate(&mul_i_abc.evaluated_values, 0, rc_values[0]);
 
     for rb in rb_values.iter().skip(1) {
