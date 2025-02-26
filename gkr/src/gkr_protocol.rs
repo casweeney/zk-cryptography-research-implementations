@@ -3,7 +3,8 @@ use circuit::arithmetic_circuit::Circuit;
 use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{
     GKRSumcheckProverProof,
     prove as sumcheck_prove,
-    verify as sumcheck_verify
+    verify as sumcheck_verify,
+    field_element_to_bytes
 };
 use polynomials::{
     composed::{product_polynomial::ProductPolynomial, sum_polynomial::SumPolynomial},
@@ -88,7 +89,10 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
             rb_values = current_rb_values.to_vec();
             rc_values = current_rc_values.to_vec();
 
+            transcript.append(&field_element_to_bytes(wb_evaluation));
             alpha = transcript.random_challenge_as_field_element();
+
+            transcript.append(&field_element_to_bytes(wc_evaluation));
             beta = transcript.random_challenge_as_field_element();
 
             // Compute claimed sum using linear combination form
@@ -174,7 +178,10 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
 
         prev_sumcheck_challenges = sumcheck_challenges.to_vec();
 
+        transcript.append(&field_element_to_bytes(wb_evaluation));
         alpha = transcript.random_challenge_as_field_element();
+
+        transcript.append(&field_element_to_bytes(wc_evaluation));
         beta = transcript.random_challenge_as_field_element();
 
         claimed_sum = (alpha * wb_evaluation) + (beta * wc_evaluation);
