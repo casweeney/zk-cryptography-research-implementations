@@ -59,10 +59,12 @@ pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut
     for round_polynomial in &proof.round_univariate_polynomials {
         let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &round_polynomial);
 
-        let eval_at_zero = univariate_poly.evaluate(F::zero());
-        let eval_at_one = univariate_poly.evaluate(F::one());
+        // Commented this out because there will be no need to evaluated which will require extra computation
+        // since we can get similar values picking the value of round_polynomial at index 0 and 1
+        // let eval_at_zero = univariate_poly.evaluate(F::zero());
+        // let eval_at_one = univariate_poly.evaluate(F::one());
 
-        if eval_at_zero + eval_at_one != current_sum {
+        if round_polynomial[0] + round_polynomial[1] != current_sum {
             return GKRSumcheckVerifierProof {
                 is_proof_valid: false,
                 random_challenges: vec![],

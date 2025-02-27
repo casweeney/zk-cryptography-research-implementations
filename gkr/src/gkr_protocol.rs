@@ -268,15 +268,8 @@ pub fn compute_verifier_initial_claim<F: PrimeField> (
         MultilinearPolynomial::partial_evaluate(&mul_i_abc.evaluated_values, 0, initial_random_challenge)
     );
 
-    let mid = sumcheck_challenges.len() / 2;
-    let (rb, rc) = sumcheck_challenges.split_at(mid);
-
-    let mut combined_challenges = Vec::with_capacity(rb.len() + rc.len());
-    combined_challenges.extend_from_slice(rb);
-    combined_challenges.extend_from_slice(rc);
-
-    let add_i_r = add_i_bc.evaluate(&combined_challenges);
-    let mul_i_r = mul_i_bc.evaluate(&combined_challenges);
+    let add_i_r = add_i_bc.evaluate(&sumcheck_challenges);
+    let mul_i_r = mul_i_bc.evaluate(&sumcheck_challenges);
 
     (add_i_r * (wb_evaluation + wc_evaluation)) + (mul_i_r * (wb_evaluation * wc_evaluation))
 }
