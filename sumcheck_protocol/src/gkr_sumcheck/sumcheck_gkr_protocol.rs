@@ -7,9 +7,8 @@ use ark_ff::{PrimeField, BigInteger};
 #[derive(Clone, Debug)]
 pub struct GKRSumcheckProverProof<F: PrimeField> {
     pub claimed_sum: F,
-    pub round_univariate_polynomials: Vec<Vec<F>>,
-    pub random_challenges: Vec<F>,
-    pub degree: usize
+    pub round_univariate_polynomials: Vec<DensedUnivariatePolynomial<F>>,
+    pub random_challenges: Vec<F>
 }
 
 #[derive(Clone, Debug)]
@@ -30,9 +29,16 @@ pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, tr
 
     for _round in 0..number_of_variables {
         let univariate = generate_round_univariate(&current_polynomial);
-        transcript.append(&univariate_to_bytes(&univariate));
+        
+        // Handle interpolation of the univariate values, to get the univariate polynomial
+        // The Univariate Polynomial is what we are sending to the verifier,
+        // so that the verifier doesn't have to do the work of interpolating before evaluating to get claimed sum
+        let x_values: Vec<F> = (0..=sum_polynomial.degree()).map(|i| F::from(i as u64)).collect();
+        let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &univariate);
 
-        round_univariate_polynomials.push(univariate);
+        transcript.append(&univariate_to_bytes(&univariate_poly.coefficients));
+
+        round_univariate_polynomials.push(univariate_poly);
 
         let random_challenge: F = transcript.random_challenge_as_field_element();
         random_challenges.push(random_challenge);
@@ -43,8 +49,7 @@ pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, tr
     GKRSumcheckProverProof {
         claimed_sum: claimed_sum,
         round_univariate_polynomials,
-        random_challenges,
-        degree: sum_polynomial.degree()
+        random_challenges
     }
 }
 
@@ -54,17 +59,13 @@ pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut
     let mut current_sum = proof.claimed_sum;
     let mut random_challenges = Vec::with_capacity(proof.round_univariate_polynomials.len());
 
-    let x_values: Vec<F> = (0..=proof.degree).map(|i| F::from(i as u64)).collect();
-
     for round_polynomial in &proof.round_univariate_polynomials {
-        let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &round_polynomial);
+        // The verifier only evaluates the univariate polynomial at 0 and 1
+        // then checks if it equals the claimed sum, received from the prover
+        let eval_at_zero = round_polynomial.evaluate(F::zero());
+        let eval_at_one = round_polynomial.evaluate(F::one());
 
-        // Commented this out because there will be no need to evaluated which will require extra computation
-        // since we can get similar values picking the value of round_polynomial at index 0 and 1
-        // let eval_at_zero = univariate_poly.evaluate(F::zero());
-        // let eval_at_one = univariate_poly.evaluate(F::one());
-
-        if round_polynomial[0] + round_polynomial[1] != current_sum {
+        if eval_at_zero + eval_at_one != current_sum {
             return GKRSumcheckVerifierProof {
                 is_proof_valid: false,
                 random_challenges: vec![],
@@ -72,11 +73,11 @@ pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut
             }
         }
 
-        transcript.append(&univariate_to_bytes(round_polynomial));
+        transcript.append(&univariate_to_bytes(&round_polynomial.coefficients));
 
         let random_challenge = transcript.random_challenge_as_field_element();
 
-        current_sum = univariate_poly.evaluate(random_challenge);
+        current_sum = round_polynomial.evaluate(random_challenge);
 
         random_challenges.push(random_challenge);
     }

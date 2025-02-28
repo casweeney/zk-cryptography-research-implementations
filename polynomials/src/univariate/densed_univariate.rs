@@ -1,6 +1,6 @@
 use ark_ff::PrimeField;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DensedUnivariatePolynomial<F: PrimeField> {
     pub coefficients: Vec<F>
 }
