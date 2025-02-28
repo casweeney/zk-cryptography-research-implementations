@@ -5,20 +5,20 @@ use ark_ff::{PrimeField, BigInteger};
 
 
 #[derive(Clone, Debug)]
-pub struct GKRSumcheckProverProof<F: PrimeField> {
+pub struct SumcheckProverProof<F: PrimeField> {
     pub claimed_sum: F,
     pub round_univariate_polynomials: Vec<DensedUnivariatePolynomial<F>>,
     pub random_challenges: Vec<F>
 }
 
 #[derive(Clone, Debug)]
-pub struct GKRSumcheckVerifierProof<F: PrimeField> {
+pub struct SumcheckVerifierProof<F: PrimeField> {
     pub is_proof_valid: bool,
     pub random_challenges: Vec<F>,
     pub last_claimed_sum: F
 }
 
-pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, transcript: &mut Transcript) -> GKRSumcheckProverProof<F> {
+pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, transcript: &mut Transcript) -> SumcheckProverProof<F> {
     let number_of_variables = sum_polynomial.number_of_variables();
         
     let mut round_univariate_polynomials = Vec::new();
@@ -46,14 +46,14 @@ pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, tr
         random_challenges.push(random_challenge);
     }
 
-    GKRSumcheckProverProof {
+    SumcheckProverProof {
         claimed_sum: claimed_sum,
         round_univariate_polynomials,
         random_challenges
     }
 }
 
-pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut Transcript) -> GKRSumcheckVerifierProof<F> {
+pub fn verify<F: PrimeField>(proof: &SumcheckProverProof<F>, transcript: &mut Transcript) -> SumcheckVerifierProof<F> {
     transcript.append(&field_element_to_bytes(proof.claimed_sum));
     
     let mut current_sum = proof.claimed_sum;
@@ -66,7 +66,7 @@ pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut
         let eval_at_one = round_polynomial.evaluate(F::one());
 
         if eval_at_zero + eval_at_one != current_sum {
-            return GKRSumcheckVerifierProof {
+            return SumcheckVerifierProof {
                 is_proof_valid: false,
                 random_challenges: vec![],
                 last_claimed_sum: current_sum
@@ -82,7 +82,7 @@ pub fn verify<F: PrimeField>(proof: &GKRSumcheckProverProof<F>, transcript: &mut
         random_challenges.push(random_challenge);
     }
 
-    GKRSumcheckVerifierProof {
+    SumcheckVerifierProof {
         is_proof_valid: true,
         random_challenges,
         last_claimed_sum: current_sum

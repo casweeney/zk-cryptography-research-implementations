@@ -1,7 +1,7 @@
 use ark_ff::PrimeField;
 use circuit::arithmetic_circuit::Circuit;
 use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{
-    GKRSumcheckProverProof,
+    SumcheckProverProof,
     prove as sumcheck_prove,
     verify as sumcheck_verify,
     field_element_to_bytes
@@ -15,7 +15,7 @@ use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::Fi
 #[derive(Clone, Debug)]
 pub struct Proof<F: PrimeField> {
     pub claimed_output: F,
-    pub sumcheck_proofs: Vec<GKRSumcheckProverProof<F>>,
+    pub sumcheck_proofs: Vec<SumcheckProverProof<F>>,
     pub wb_evals: Vec<F>,
     pub wc_evals: Vec<F>
 }
