@@ -37,13 +37,13 @@ pub fn prove<F: PrimeField>(sum_polynomial: SumPolynomial<F>, claimed_sum: F, tr
         let univariate_poly = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &univariate);
 
         transcript.append(&univariate_to_bytes(&univariate_poly.coefficients));
-
         round_univariate_polynomials.push(univariate_poly);
 
         let random_challenge: F = transcript.random_challenge_as_field_element();
-        random_challenges.push(random_challenge);
 
         current_polynomial = current_polynomial.partial_evaluate(0, random_challenge);
+
+        random_challenges.push(random_challenge);
     }
 
     GKRSumcheckProverProof {
