@@ -21,9 +21,12 @@ pub struct Layer {
 
 pub struct Circuit<F: PrimeField> {
     pub layers: Vec<Layer>,
-    // Track intermediate values at each layer
-    pub layer_evaluations: Vec<Vec<F>>,
     _phantom: PhantomData<F>
+}
+
+pub struct CircuitEvaluationResult<F: PrimeField> {
+    pub output: Vec<F>,
+    pub layer_evaluations: Vec<Vec<F>>
 }
 
 //////////////// Gate Implementation ///////////////////
@@ -52,12 +55,11 @@ impl <F: PrimeField>Circuit<F> {
     pub fn new(layers: Vec<Layer>) -> Self {
         Self {
             layers,
-            layer_evaluations: Vec::new(),
             _phantom: PhantomData
         }
     }
 
-    pub fn evaluate(&mut self, values: Vec<F>) -> Vec<F> {
+    pub fn evaluate(&mut self, values: Vec<F>) -> CircuitEvaluationResult<F> {
         let mut current_input = values;
 
         let mut reversed_evaluations = Vec::new();
@@ -94,18 +96,20 @@ impl <F: PrimeField>Circuit<F> {
         }
 
         reversed_evaluations.reverse();
-        self.layer_evaluations = reversed_evaluations;
 
-        self.layer_evaluations[0].clone()
+        CircuitEvaluationResult {
+            output: reversed_evaluations[0].clone(),
+            layer_evaluations: reversed_evaluations
+        }
     }
 
     // This function gets the evaluations of a layer: Vec<F> whose index is passed as layer_index,
     // then it converts it to a Multilinear polynomial
     // This will be used for the MLE: Multilinear Extension
-    pub fn w_i_polynomial(&self, layer_index: usize) -> MultilinearPolynomial<F> {
-        assert!(layer_index < self.layer_evaluations.len(), "layer index out of bounds");
+    pub fn w_i_polynomial(circuit_evaluation: &CircuitEvaluationResult<F>, layer_index: usize) -> MultilinearPolynomial<F> {
+        assert!(layer_index < circuit_evaluation.layer_evaluations.len(), "layer index out of bounds");
 
-        MultilinearPolynomial::new(&self.layer_evaluations[layer_index])
+        MultilinearPolynomial::new(&circuit_evaluation.layer_evaluations[layer_index])
     }
 
     pub fn add_i_and_mul_i_mle(&mut self, layer_index: usize) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
@@ -204,8 +208,8 @@ mod tests {
             vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)]
         ];
 
-        assert_eq!(result[0], Fq::from(100));
-        assert_eq!(circuit.layer_evaluations, expected_layers_evaluation);
+        assert_eq!(result.output[0], Fq::from(100));
+        assert_eq!(result.layer_evaluations, expected_layers_evaluation);
     }
 
     #[test]
@@ -229,8 +233,8 @@ mod tests {
             vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)]
         ];
 
-        assert_eq!(result[0], Fq::from(15));
-        assert_eq!(circuit.layer_evaluations, expected_layers_evaluation)
+        assert_eq!(result.output[0], Fq::from(15));
+        assert_eq!(result.layer_evaluations, expected_layers_evaluation)
     }
 
     #[test]
@@ -258,7 +262,7 @@ mod tests {
         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1, layer2]);
         let result = circuit.evaluate(input);
 
-        assert_eq!(result[0], Fq::from(1695));
+        assert_eq!(result.output[0], Fq::from(1695));
     }
 
     #[test]
