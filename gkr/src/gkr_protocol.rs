@@ -14,7 +14,7 @@ use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::Fi
 
 #[derive(Clone, Debug)]
 pub struct Proof<F: PrimeField> {
-    pub circuit_ouput: Vec<F>,
+    pub circuit_output: Vec<F>,
     pub claimed_sum: F,
     pub sumcheck_proofs: Vec<SumcheckProverProof<F>>,
     pub wb_evals: Vec<F>,
@@ -102,7 +102,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
     }
 
     Proof {
-        circuit_ouput: circuit_evaluation.output,
+        circuit_output: circuit_evaluation.output,
         claimed_sum: claimed_sum,
         sumcheck_proofs: layer_proofs,
         wb_evals,
@@ -117,12 +117,12 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
     let mut prev_sumcheck_challenges = Vec::new();
 
     // layer 0 computation
-    let w0_polynomial = if proof.circuit_ouput.len() == 1 {
-        let mut w0_padded_with_zero = proof.circuit_ouput;
+    let w0_polynomial = if proof.circuit_output.len() == 1 {
+        let mut w0_padded_with_zero = proof.circuit_output;
         w0_padded_with_zero.push(F::zero());
         MultilinearPolynomial::new(&w0_padded_with_zero)
     } else {
-        MultilinearPolynomial::new(&proof.circuit_ouput)
+        MultilinearPolynomial::new(&proof.circuit_output)
     };
 
     transcript.append(&w0_polynomial.convert_to_bytes());
