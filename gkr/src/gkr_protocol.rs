@@ -14,14 +14,15 @@ use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::Fi
 
 #[derive(Clone, Debug)]
 pub struct Proof<F: PrimeField> {
-    pub claimed_output: F,
+    pub circuit_ouput: Vec<F>,
+    pub claimed_sum: F,
     pub sumcheck_proofs: Vec<SumcheckProverProof<F>>,
     pub wb_evals: Vec<F>,
     pub wc_evals: Vec<F>
 }
 
 pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> {
-    circuit.evaluate(inputs.to_vec());
+    let circuit_evaluation = circuit.evaluate(inputs.to_vec());
 
     let mut transcript = Transcript::new();
     let mut layer_proofs = Vec::new();
@@ -33,7 +34,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
     let mut rc_values = Vec::new();
 
     // handling layer 0 computation
-    let mut w0_polynomial = circuit.w_i_polynomial(0);
+    let mut w0_polynomial = Circuit::w_i_polynomial(&circuit_evaluation, 0);
 
     if w0_polynomial.evaluated_values.len() == 1 {
         let mut w0_padded_with_zero = w0_polynomial.evaluated_values;
@@ -66,7 +67,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
             )
         };
 
-        let wb_poly = circuit.w_i_polynomial(layer_index + 1);
+        let wb_poly = Circuit::w_i_polynomial(&circuit_evaluation, layer_index + 1);
         let wc_poly = wb_poly.clone();
 
         let fbc_polynomial = compute_fbc_polynomial(add_i_bc, mul_i_bc, &wb_poly, &wc_poly);
@@ -101,8 +102,9 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
     }
 
     Proof {
+        circuit_ouput: circuit_evaluation.output,
+        claimed_sum: claimed_sum,
         sumcheck_proofs: layer_proofs,
-        claimed_output: claimed_sum,
         wb_evals,
         wc_evals
     }
@@ -115,13 +117,13 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
     let mut prev_sumcheck_challenges = Vec::new();
 
     // layer 0 computation
-    let mut w0_polynomial = circuit.w_i_polynomial(0);
-
-    if w0_polynomial.evaluated_values.len() == 1 {
-        let mut w0_padded_with_zero = w0_polynomial.evaluated_values;
+    let w0_polynomial = if proof.circuit_ouput.len() == 1 {
+        let mut w0_padded_with_zero = proof.circuit_ouput;
         w0_padded_with_zero.push(F::zero());
-        w0_polynomial = MultilinearPolynomial::new(&w0_padded_with_zero);
-    }
+        MultilinearPolynomial::new(&w0_padded_with_zero)
+    } else {
+        MultilinearPolynomial::new(&proof.circuit_ouput)
+    };
 
     transcript.append(&w0_polynomial.convert_to_bytes());
     let random_challenge_a: F = transcript.random_challenge_as_field_element();
