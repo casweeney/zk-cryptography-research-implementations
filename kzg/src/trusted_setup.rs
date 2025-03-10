@@ -96,4 +96,12 @@ mod tests {
 
         assert_eq!(lagrange_basis, expected_lagrange_basis);
     }
+
+    #[test]
+    fn test_compute_lagrange_basis_d2() {
+        let taus = vec![Fr::from(5), Fr::from(2)];
+        let lagrange_basis = compute_lagrange_basis(&taus);
+        let expected = vec![Fr::from(4), Fr::from(-8), Fr::from(-5), Fr::from(10)];
+        assert_eq!(lagrange_basis, expected);
+    }
 }
