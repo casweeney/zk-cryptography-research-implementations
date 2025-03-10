@@ -21,7 +21,7 @@ impl <P: Pairing>TrustedSetup<P> {
     }
 }
 
-pub fn compute_lagrange_basis<F: PrimeField>(taus: &[F]) -> Vec<F> {
+fn compute_lagrange_basis<F: PrimeField>(taus: &[F]) -> Vec<F> {
     let num_of_variables = taus.len();
     assert!(num_of_variables > 0, "requires at least one variable");
 
@@ -48,7 +48,7 @@ pub fn compute_lagrange_basis<F: PrimeField>(taus: &[F]) -> Vec<F> {
     lagrange_basis
 }
 
-pub fn compute_g1_powers_of_tau<P: Pairing, F: PrimeField>(lagrange_basis: &[F]) -> Vec<P::G1> {
+fn compute_g1_powers_of_tau<P: Pairing, F: PrimeField>(lagrange_basis: &[F]) -> Vec<P::G1> {
     let g1 = P::G1::generator();
     let mut g1_powers_of_tau = Vec::with_capacity(lagrange_basis.len());
 
