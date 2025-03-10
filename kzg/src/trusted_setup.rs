@@ -76,22 +76,22 @@ pub fn compute_g2_powers_of_tau<P: Pairing, F: PrimeField>(taus: &[F]) -> Vec<P:
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bls12_381::{Bls12_381, Fr as BlsFr, G1Affine};
+    use ark_bls12_381::Fr;
 
     #[test]
     fn test_compute_lagrange_basis() {
-        let taus = vec![BlsFr::from(5), BlsFr::from(2), BlsFr::from(3)];
+        let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
         let lagrange_basis = compute_lagrange_basis(&taus);
         
         let expected_lagrange_basis = vec![
-            BlsFr::from(-8),
-            BlsFr::from(12),
-            BlsFr::from(16),
-            BlsFr::from(-24),
-            BlsFr::from(10),
-            BlsFr::from(-15),
-            BlsFr::from(-20),
-            BlsFr::from(30),
+            Fr::from(-8),
+            Fr::from(12),
+            Fr::from(16),
+            Fr::from(-24),
+            Fr::from(10),
+            Fr::from(-15),
+            Fr::from(-20),
+            Fr::from(30),
         ];
 
         assert_eq!(lagrange_basis, expected_lagrange_basis);
