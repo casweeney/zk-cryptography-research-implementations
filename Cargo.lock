@@ -365,6 +365,7 @@ dependencies = [
  "ark-bls12-381",
  "ark-ec",
  "ark-ff",
+ "polynomials",
  "rand 0.9.0",
 ]
 
