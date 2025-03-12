@@ -1,5 +1,5 @@
 [package]
-name = "kzg"
+name = "multilinear_kzg"
 version = "0.1.0"
 edition = "2021"
 

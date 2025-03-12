@@ -21,7 +21,7 @@ pub struct Proof<F: PrimeField> {
     pub wc_evaluations: Vec<F>
 }
 
-/// This function is called by the prover. It handles the proving part of the GKR protocol
+/// This function is called by the prover : It handles the proving part of the GKR protocol
 pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> {
     let circuit_evaluation = circuit.evaluate(inputs.to_vec());
 
@@ -132,6 +132,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
     }
 }
 
+/// This function is called by the verifier : It handles the verifying part of GKR
 pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: &[F]) -> bool {
     let mut transcript = Transcript::new();
     let mut alpha = F::zero();
