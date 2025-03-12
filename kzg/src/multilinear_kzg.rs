@@ -1,4 +1,4 @@
-use ark_ff::{PrimeField, AdditiveGroup, Zero};
+use ark_ff::{PrimeField, AdditiveGroup};
 use ark_ec::{pairing::{Pairing, PairingOutput}, PrimeGroup};
 use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use crate::trusted_setup::TrustedSetup;
@@ -10,8 +10,8 @@ pub struct MultilinearKZGProof<F: PrimeField, P: Pairing> {
 
 
 pub fn commit_to_polynomial<F: PrimeField, P: Pairing>(
-    polynomial: MultilinearPolynomial<F>,
-    trust_setup: TrustedSetup<P>
+    polynomial: &MultilinearPolynomial<F>,
+    trust_setup: &TrustedSetup<P>
 ) -> P::G1 {
     assert_eq!(polynomial.evaluated_values.len(), trust_setup.g1_powers_of_tau.len(), "Polynomial evaluation must match g1 length");
 
@@ -25,8 +25,8 @@ pub fn commit_to_polynomial<F: PrimeField, P: Pairing>(
 }
 
 pub fn open_and_prove<F: PrimeField, P: Pairing>(
-    polynomial: MultilinearPolynomial<F>,
-    trust_setup: TrustedSetup<P>,
+    polynomial: &MultilinearPolynomial<F>,
+    trust_setup: &TrustedSetup<P>,
     opening_values: &[F]
 ) -> MultilinearKZGProof<F, P> {
     assert_eq!(polynomial.number_of_variables() as usize, opening_values.len(), "number of polynomial variables must match length of opening values");
@@ -85,10 +85,10 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
 }
 
 pub fn verify<F: PrimeField, P: Pairing>(
-    trust_setup: TrustedSetup<P>,
+    trust_setup: &TrustedSetup<P>,
     commitment: &P::G1,
     opening_values: &[F],
-    proof: MultilinearKZGProof<F, P>
+    proof: &MultilinearKZGProof<F, P>
 ) -> bool {
     assert_eq!(
         opening_values.len(),
@@ -157,4 +157,100 @@ fn expand_vec<F: PrimeField>(values: &[F]) -> Vec<F> {
     }
 
     blown_values
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ark_bls12_381::{Bls12_381, Fr};
+    use ark_bn254::Fq;
+
+    #[test]
+    fn test_multilinear_kzg() {
+        let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
+        let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
+        let values = vec![
+            Fq::from(0),
+            Fq::from(4),
+            Fq::from(0),
+            Fq::from(4),
+            Fq::from(0),
+            Fq::from(4),
+            Fq::from(3),
+            Fq::from(7)
+        ];
+        let polynomial = MultilinearPolynomial::new(&values);
+
+        let commitment = commit_to_polynomial(&polynomial, &setup);
+        let opening_values = vec![Fq::from(6), Fq::from(4), Fq::from(0)];
+
+        let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
+
+        let verification = verify(&setup, &commitment, &opening_values, &proof);
+
+        assert_eq!(verification, true);
+    }
+
+    #[test]
+    fn test_multilinear_kzg2() {
+        let taus = vec![Fr::from(2), Fr::from(3), Fr::from(4)];
+        let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
+
+        let values = vec![
+            Fq::from(0),
+            Fq::from(7),
+            Fq::from(0),
+            Fq::from(5),
+            Fq::from(0),
+            Fq::from(7),
+            Fq::from(4),
+            Fq::from(9),
+        ];
+        let polynomial = MultilinearPolynomial::new(&values);
+
+        let commitment = commit_to_polynomial(&polynomial, &setup);
+        let opening_values = vec![Fq::from(5), Fq::from(9), Fq::from(6)];
+
+        let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
+
+        let verification = verify(&setup, &commitment, &opening_values, &proof);
+
+        assert_eq!(verification, true);
+    }
+
+    #[test]
+    fn test_multilinear_kzg3() {
+        let taus = vec![Fr::from(12), Fr::from(9), Fr::from(28), Fr::from(40)];
+        let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
+
+        let values = vec![
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(2),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(10),
+            Fq::from(12),
+            Fq::from(0),
+            Fq::from(-12),
+            Fq::from(4),
+            Fq::from(-6),
+            Fq::from(0),
+            Fq::from(-12),
+            Fq::from(14),
+            Fq::from(4),
+        ];
+
+        let polynomial = MultilinearPolynomial::new(&values);
+
+        let commitment = commit_to_polynomial(&polynomial, &setup);
+        let opening_values = vec![Fq::from(54), Fq::from(90), Fq::from(76), Fq::from(160)];
+
+        let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
+
+        let verification = verify(&setup, &commitment, &opening_values, &proof);
+
+        assert_eq!(verification, true);
+    }
 }
