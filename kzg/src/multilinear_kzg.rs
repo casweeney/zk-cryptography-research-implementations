@@ -29,12 +29,12 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
     trust_setup: TrustedSetup<P>,
     opening_values: &[F]
 ) -> MultilinearKZGProof<F, P> {
-    // NOTE: Before we start generating proofs, we need to first evaluate the polynomial using the values given by the verifier to open the polynomial.
     assert_eq!(polynomial.number_of_variables() as usize, opening_values.len(), "number of polynomial variables must match length of opening values");
     assert_eq!(opening_values.len(), trust_setup.g2_powers_of_tau.len(), "Opening values must match number of variables from trusted setup");
 
     let mut proofs: Vec<_> = Vec::with_capacity(opening_values.len());
 
+    // NOTE: Before we start generating proofs, we need to first evaluate the polynomial using the values given by the verifier to open the polynomial.
     // Evaluating Multilinear polynomial at the opening points => opening_values
     let evaluation_v = polynomial.evaluate(opening_values); // evaluation of polynomial at random opening values => v
 
@@ -53,9 +53,10 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
         // Get the quotient polynomial, which will be evaluated at tau, to get the proof of each iteration
         let quotient_polynomial = compute_quotient_polynomial(&sub_polynomial);
         
-        // With the quotient polynomial, compute the proof and push into the proofs vector, but we need to blow up
-        // to replace the removed variable with zero
-        // Blow up based on number of variables removed (i + 1)
+        // With the quotient polynomial, compute the proof and push into the proofs vector
+        // But before we need to blow up to replace the removed variable with zero so that
+        // the quotient polynomial will have the same length with as lagrange basis polynomial for dot product operation
+        // Blow up is based on number of variables removed (i + 1)
         let blow_up_times = i + 1;
         let blown_quotient_polynomial = blow_up(quotient_polynomial, blow_up_times);
 
@@ -66,6 +67,7 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
             .zip(trust_setup.g1_powers_of_tau.iter())
             .map(|(evaluated_value, g1_power)| g1_power.mul_bigint(evaluated_value.into_bigint()))
             .sum();
+
         proofs.push(proof);
 
 
@@ -76,7 +78,10 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
         sub_polynomial = remainder_polynomial;
     }
 
-    todo!()
+    MultilinearKZGProof {
+        evaluation: evaluation_v,
+        proofs,
+    }
 }
 
 pub fn verify<F: PrimeField, P: Pairing>(
