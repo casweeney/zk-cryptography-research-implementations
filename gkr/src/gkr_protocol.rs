@@ -17,8 +17,8 @@ pub struct Proof<F: PrimeField> {
     pub circuit_output: Vec<F>,
     pub claimed_sum: F,
     pub sumcheck_proofs: Vec<SumcheckProverProof<F>>,
-    pub wb_evals: Vec<F>,
-    pub wc_evals: Vec<F>
+    pub wb_evaluations: Vec<F>,
+    pub wc_evaluations: Vec<F>
 }
 
 pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> {
@@ -26,8 +26,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
 
     let mut transcript = Transcript::new();
     let mut layer_proofs = Vec::new();
-    let mut wb_evals= Vec::new();
-    let mut wc_evals = Vec::new();
+    let mut wb_evaluations= Vec::new();
+    let mut wc_evaluations = Vec::new();
     let mut alpha = F::zero();
     let mut beta = F::zero();
     let mut rb_values = Vec::new();
@@ -81,8 +81,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
             // Evaluate wb and wc to be used by verifier
             let (wb_evaluation, wc_evaluation) = evaluate_wb_wc(&wb_poly, &wc_poly, &sumcheck_challenges);
 
-            wb_evals.push(wb_evaluation);
-            wc_evals.push(wc_evaluation);
+            wb_evaluations.push(wb_evaluation);
+            wc_evaluations.push(wc_evaluation);
 
             // use the randomness from the sumcheck proof, split into two vec! for rb and rc
             let middle = sumcheck_challenges.len() / 2;
@@ -103,10 +103,10 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
 
     Proof {
         circuit_output: circuit_evaluation.output,
-        claimed_sum: claimed_sum,
+        claimed_sum,
         sumcheck_proofs: layer_proofs,
-        wb_evals,
-        wc_evals
+        wb_evaluations,
+        wc_evaluations
     }
 }
 
@@ -144,7 +144,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
         let sumcheck_challenges = verify_result.random_challenges;
 
         let (wb_evaluation, wc_evaluation) = if layer_index < circuit.layers.len() - 1 {
-            (proof.wb_evals[layer_index], proof.wc_evals[layer_index])
+            (proof.wb_evaluations[layer_index], proof.wc_evaluations[layer_index])
         } else {
             let wb_poly = MultilinearPolynomial::new(&inputs);
             let wc_poly = wb_poly.clone();
