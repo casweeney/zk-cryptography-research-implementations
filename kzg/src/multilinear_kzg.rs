@@ -121,7 +121,7 @@ pub fn verify<F: PrimeField, P: Pairing>(
 
 ////////////////////////////////////////
 ///         Helper Functions        ///
-///////////////////////////////////////
+//////////////////////////////////////
 
 fn compute_quotient_polynomial<F: PrimeField>(
     polynomial: &MultilinearPolynomial<F>
