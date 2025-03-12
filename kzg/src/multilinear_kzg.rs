@@ -100,7 +100,7 @@ pub fn verify<F: PrimeField, P: Pairing>(
     let commitment_minus_v = *commitment - P::G1::generator().mul_bigint(proof.evaluation.into_bigint());
     let lhs = P::pairing(commitment_minus_v, P::G2::generator());
 
-    // Compute RHS
+    // Compute RHS => Running summation of: (g1_Qi * (g2_tau - g2_xi))
     let mut rhs = PairingOutput::ZERO;
     for (i, tau) in trust_setup.g2_powers_of_tau.iter().enumerate() {
         rhs += P::pairing(proof.proofs[i], *tau - P::G2::generator().mul_bigint(opening_values[i].into_bigint()))

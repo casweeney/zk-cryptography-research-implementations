@@ -103,7 +103,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
 
     Proof {
         circuit_output: circuit_evaluation.output,
-        claimed_sum: claimed_sum,
+        claimed_sum,
         sumcheck_proofs: layer_proofs,
         wb_evaluations,
         wc_evaluations
