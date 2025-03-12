@@ -4,17 +4,20 @@ use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use crate::trusted_setup::TrustedSetup;
 
 pub struct MultilinearKZGProof<F: PrimeField, P: Pairing> {
-    pub evaluation: F,
-    pub proofs: Vec<P::G1>
+    pub evaluation: F, // this is represented as "v" in the verification formula : it is the evaluation of the polynomial at verifier's selected points
+    pub proofs: Vec<P::G1> // this holds the proof, and the length is based on the number of variables in the polynomial
 }
 
-
+/// This function is used to commit to a polynomial
+/// The commitment is sent to the verifier, this commitment is what makes verification succinct
 pub fn commit_to_polynomial<F: PrimeField, P: Pairing>(
     polynomial: &MultilinearPolynomial<F>,
     trust_setup: &TrustedSetup<P>
 ) -> P::G1 {
     assert_eq!(polynomial.evaluated_values.len(), trust_setup.g1_powers_of_tau.len(), "Polynomial evaluation must match g1 length");
 
+    // Commitment to a polynomial is basically a dot product operation between the values of the polynomial and the powers of tau.
+    // The powers of tau is based on the lagrange basis of the variables over the boolean hypercube
     let commitment = polynomial.evaluated_values
         .iter()
         .zip(trust_setup.g1_powers_of_tau.iter())
@@ -24,6 +27,9 @@ pub fn commit_to_polynomial<F: PrimeField, P: Pairing>(
     commitment
 }
 
+/// This function is used to open polynomial random points that will be sent by the verifier.
+/// The length of the array of points will be equal to the number of variables in the polynomial
+/// The prover will evaluate the polynomial at the points the verifier sent, then generate proofs to validate the evaluation at those points
 pub fn open_and_prove<F: PrimeField, P: Pairing>(
     polynomial: &MultilinearPolynomial<F>,
     trust_setup: &TrustedSetup<P>,
@@ -84,6 +90,9 @@ pub fn open_and_prove<F: PrimeField, P: Pairing>(
     }
 }
 
+/// This function is used to verify the prover's claim. The verifier calls this function
+/// It uses the verifier equation/formula to compute the left-hand-side and right-hand-side
+/// then it checks if both sides are equal
 pub fn verify<F: PrimeField, P: Pairing>(
     trust_setup: &TrustedSetup<P>,
     commitment: &P::G1,
@@ -163,26 +172,25 @@ fn expand_vec<F: PrimeField>(values: &[F]) -> Vec<F> {
 mod tests {
     use super::*;
     use ark_bls12_381::{Bls12_381, Fr};
-    use ark_bn254::Fq;
 
     #[test]
     fn test_multilinear_kzg() {
         let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
         let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
         let values = vec![
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(0),
-            Fq::from(4),
-            Fq::from(3),
-            Fq::from(7)
+            Fr::from(0),
+            Fr::from(4),
+            Fr::from(0),
+            Fr::from(4),
+            Fr::from(0),
+            Fr::from(4),
+            Fr::from(3),
+            Fr::from(7)
         ];
         let polynomial = MultilinearPolynomial::new(&values);
 
         let commitment = commit_to_polynomial(&polynomial, &setup);
-        let opening_values = vec![Fq::from(6), Fq::from(4), Fq::from(0)];
+        let opening_values = vec![Fr::from(6), Fr::from(4), Fr::from(0)];
 
         let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
 
