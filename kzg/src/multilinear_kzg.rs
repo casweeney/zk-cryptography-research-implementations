@@ -197,19 +197,19 @@ mod tests {
         let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
 
         let values = vec![
-            Fq::from(0),
-            Fq::from(7),
-            Fq::from(0),
-            Fq::from(5),
-            Fq::from(0),
-            Fq::from(7),
-            Fq::from(4),
-            Fq::from(9),
+            Fr::from(0),
+            Fr::from(7),
+            Fr::from(0),
+            Fr::from(5),
+            Fr::from(0),
+            Fr::from(7),
+            Fr::from(4),
+            Fr::from(9),
         ];
         let polynomial = MultilinearPolynomial::new(&values);
 
         let commitment = commit_to_polynomial(&polynomial, &setup);
-        let opening_values = vec![Fq::from(5), Fq::from(9), Fq::from(6)];
+        let opening_values = vec![Fr::from(5), Fr::from(9), Fr::from(6)];
 
         let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
 
@@ -224,28 +224,28 @@ mod tests {
         let setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
 
         let values = vec![
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(2),
-            Fq::from(0),
-            Fq::from(0),
-            Fq::from(10),
-            Fq::from(12),
-            Fq::from(0),
-            Fq::from(-12),
-            Fq::from(4),
-            Fq::from(-6),
-            Fq::from(0),
-            Fq::from(-12),
-            Fq::from(14),
-            Fq::from(4),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(2),
+            Fr::from(0),
+            Fr::from(0),
+            Fr::from(10),
+            Fr::from(12),
+            Fr::from(0),
+            Fr::from(-12),
+            Fr::from(4),
+            Fr::from(-6),
+            Fr::from(0),
+            Fr::from(-12),
+            Fr::from(14),
+            Fr::from(4),
         ];
 
         let polynomial = MultilinearPolynomial::new(&values);
 
         let commitment = commit_to_polynomial(&polynomial, &setup);
-        let opening_values = vec![Fq::from(54), Fq::from(90), Fq::from(76), Fq::from(160)];
+        let opening_values = vec![Fr::from(54), Fr::from(90), Fr::from(76), Fr::from(160)];
 
         let proof = open_and_prove(&polynomial, &setup, &opening_values.to_vec());
 
