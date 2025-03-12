@@ -1,5 +1,5 @@
-use ark_ff::PrimeField;
-use ark_ec::{pairing::Pairing, PrimeGroup};
+use ark_ff::{PrimeField, AdditiveGroup, Zero};
+use ark_ec::{pairing::{Pairing, PairingOutput}, PrimeGroup};
 use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use crate::trusted_setup::TrustedSetup;
 
@@ -90,11 +90,33 @@ pub fn verify<F: PrimeField, P: Pairing>(
     opening_values: &[F],
     proof: MultilinearKZGProof<F, P>
 ) -> bool {
+    assert_eq!(
+        opening_values.len(),
+        proof.proofs.len(),
+        "Number of opening values must match number of proofs"
+    );
 
-    todo!()
+    // Compute LHS => g1_commitment - g1_evaluation * g2_1
+    let commitment_minus_v = *commitment - P::G1::generator().mul_bigint(proof.evaluation.into_bigint());
+    let lhs = P::pairing(commitment_minus_v, P::G2::generator());
+
+    // Compute RHS
+    let mut rhs = PairingOutput::ZERO;
+    for (i, tau) in trust_setup.g2_powers_of_tau.iter().enumerate() {
+        rhs += P::pairing(proof.proofs[i], *tau - P::G2::generator().mul_bigint(opening_values[i].into_bigint()))
+    }
+
+    lhs == rhs
 }
 
-pub fn compute_quotient_polynomial<F: PrimeField>(polynomial: &MultilinearPolynomial<F>) -> MultilinearPolynomial<F> {
+
+////////////////////////////////////////
+///         Helper Functions        ///
+///////////////////////////////////////
+
+fn compute_quotient_polynomial<F: PrimeField>(
+    polynomial: &MultilinearPolynomial<F>
+) -> MultilinearPolynomial<F> {
     let mid = polynomial.evaluated_values.len() / 2;
     let (evals_at_zero, evals_at_one) = polynomial.evaluated_values.split_at(mid);
     
@@ -107,7 +129,7 @@ pub fn compute_quotient_polynomial<F: PrimeField>(polynomial: &MultilinearPolyno
     MultilinearPolynomial::new(&quotient_evaluations)
 }
 
-pub fn blow_up<F: PrimeField>(
+fn blow_up<F: PrimeField>(
     polynomial: MultilinearPolynomial<F>,
     blow_up_times: usize,
 ) -> MultilinearPolynomial<F> {
