@@ -1,4 +1,5 @@
 use ark_ff::PrimeField;
+use ark_ec::pairing::Pairing;
 use circuit::arithmetic_circuit::Circuit;
 use sumcheck_protocol::gkr_sumcheck::sumcheck_gkr_protocol::{
     SumcheckProverProof,
@@ -11,19 +12,30 @@ use polynomials::{
     multilinear::evaluation_form::MultilinearPolynomial
 };
 use transcripts::fiat_shamir::{fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface};
+use multilinear_kzg::{multilinear_kzg::{MultilinearKZG, MultilinearKZGProof}, trusted_setup::TrustedSetup};
 
 #[derive(Clone, Debug)]
-pub struct Proof<F: PrimeField> {
+pub struct SuccinctProof<F: PrimeField, P: Pairing> {
     pub circuit_output: Vec<F>,
     pub claimed_sum: F,
     pub sumcheck_proofs: Vec<SumcheckProverProof<F>>,
     pub wb_evaluations: Vec<F>,
-    pub wc_evaluations: Vec<F>
+    pub wc_evaluations: Vec<F>,
+    pub input_polynomial_commitment: P::G1,
+    pub input_rb_proof: MultilinearKZGProof<F, P>,
+    pub input_rc_proof: MultilinearKZGProof<F, P>
 }
 
 /// This function is called by the prover : It handles the proving part of the GKR protocol
-pub fn prove_succinct<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> {
+pub fn prove_succinct<F: PrimeField, P: Pairing>(
+    circuit: &mut Circuit<F>,
+    inputs: &[F],
+    trusted_setup: &TrustedSetup<P>
+) -> SuccinctProof<F, P> {
     let circuit_evaluation = circuit.evaluate(inputs.to_vec());
+
+    let input_polynomial = MultilinearPolynomial::new(inputs);
+    let input_polynomial_commitment = MultilinearKZG::commit_to_polynomial(&input_polynomial, &trusted_setup);
 
     let mut transcript = Transcript::new();
     let mut layer_proofs = Vec::new();
@@ -89,6 +101,15 @@ pub fn prove_succinct<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> 
         // NOTE: This sumcheck runs on the f(b,c) polynomial => Which is a SumPolynomial of two ProductPolynomial
         let sumcheck_proof = sumcheck_prove(fbc_polynomial, claimed_sum, &mut transcript);
         layer_proofs.push(sumcheck_proof.clone());
+
+        let sumcheck_challenges = sumcheck_proof.random_challenges;
+
+        // use the randomness from the sumcheck proof, split into two vec! for rb and rc
+        let middle = sumcheck_challenges.len() / 2;
+        let (current_rb_values, current_rc_values) = sumcheck_challenges.split_at(middle);
+
+        rb_values = current_rb_values.to_vec();
+        rc_values = current_rc_values.to_vec();
         
         // In the following code blocks, we are sending the evaluation of the w-polynomials (wb and wc)
         // Since the verifier doesn't need to know the w-polynomials of the subsequent evaluation layers of the circuit
@@ -98,19 +119,11 @@ pub fn prove_succinct<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> 
         // We are also ensuring that the prover doesn't send the evaluation of the input layer, since the verifier knows the input
         // that is why we are only evaluating w-polynomials for circuit_layer_length - 1
         if layer_index < circuit.layers.len() - 1 {
-            let sumcheck_challenges = sumcheck_proof.random_challenges;
-
             // Evaluate wb and wc to be used by verifier
             let (wb_evaluation, wc_evaluation) = evaluate_wb_wc(&wb_poly, &wc_poly, &sumcheck_challenges);
 
             wb_evaluations.push(wb_evaluation);
             wc_evaluations.push(wc_evaluation);
-
-            // use the randomness from the sumcheck proof, split into two vec! for rb and rc
-            let middle = sumcheck_challenges.len() / 2;
-            let (current_rb_values, current_rc_values) = sumcheck_challenges.split_at(middle);
-            rb_values = current_rb_values.to_vec();
-            rc_values = current_rc_values.to_vec();
 
             transcript.append(&field_element_to_bytes(wb_evaluation));
             alpha = transcript.random_challenge_as_field_element();
@@ -123,17 +136,27 @@ pub fn prove_succinct<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> 
         }
     }
 
-    Proof {
+    let input_rb_proof = MultilinearKZG::open_and_prove(&input_polynomial, &trusted_setup, &rb_values);
+    let input_rc_proof = MultilinearKZG::open_and_prove(&input_polynomial, &trusted_setup, &rc_values);
+
+    SuccinctProof {
         circuit_output: circuit_evaluation.output,
         claimed_sum,
         sumcheck_proofs: layer_proofs,
         wb_evaluations,
-        wc_evaluations
+        wc_evaluations,
+        input_polynomial_commitment,
+        input_rb_proof,
+        input_rc_proof
     }
 }
 
 /// This function is called by the verifier : It handles the verifying part of GKR
-pub fn verify_succinct<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: &[F]) -> bool {
+pub fn verify_succinct<F: PrimeField, P: Pairing>(
+    circuit: &mut Circuit<F>,
+    proof: SuccinctProof<F, P>,
+    trusted_setup: &TrustedSetup<P>
+) -> bool {
     let mut transcript = Transcript::new();
     let mut alpha = F::zero();
     let mut beta = F::zero();
@@ -168,44 +191,42 @@ pub fn verify_succinct<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>,
         let sumcheck_challenges = verify_result.random_challenges;
 
         // This is where the verifier is using the evaluation of the w-polynomials (wb and wc) received from the prove
-        // The verifier is also making sure the he is not using the evaluated inputs, because he knows the input
-        // If the prover wasn't honest, the verifier's computing will fail, because he will be using the input he knows and not values received from the prover
-        let (wb_evaluation, wc_evaluation) = if layer_index < circuit.layers.len() - 1 {
-            (proof.wb_evaluations[layer_index], proof.wc_evaluations[layer_index])
-        } else {
-            // The verifier evaluates the input polynomial here, to be used for verification
-            let wb_poly = MultilinearPolynomial::new(&inputs);
-            let wc_poly = wb_poly.clone();
-
-            evaluate_wb_wc(&wb_poly, &wc_poly, &sumcheck_challenges)
-        };
+        // The verifier is not verifying the inputs because the prover sent the polynomial commitment, so the verifier will verifier the commitment using KZG
 
         // The expected claim is computed differently: for layer0-(output layer) and subsequent layers
         // The computation for layer0 is pretty basic, but for subsequent layers, the computation uses the alpha beta folding
-        let expected_claim = if layer_index == 0 {
-            compute_verifier_initial_claim(
-                circuit,
-                layer_index,
-                random_challenge_a,
-                &sumcheck_challenges,
-                wb_evaluation,
-                wc_evaluation
-            )
-        } else {
-            compute_verifier_folded_claim(
-                circuit,
-                layer_index,
-                &sumcheck_challenges,
-                &prev_sumcheck_challenges,
-                wb_evaluation,
-                wc_evaluation,
-                alpha,
-                beta
-            )
-        };
+        let mut wb_evaluation = F::zero();
+        let mut wc_evaluation = F::zero();
 
-        if expected_claim != verify_result.last_claimed_sum {
-            return false;
+        if layer_index < circuit.layers.len() - 1 {
+            wb_evaluation = proof.wb_evaluations[layer_index];
+            wc_evaluation = proof.wc_evaluations[layer_index];
+
+            let expected_claim = if layer_index == 0 {
+                compute_verifier_initial_claim(
+                    circuit,
+                    layer_index,
+                    random_challenge_a,
+                    &sumcheck_challenges,
+                    wb_evaluation,
+                    wc_evaluation
+                )
+            } else {
+                compute_verifier_folded_claim(
+                    circuit,
+                    layer_index,
+                    &sumcheck_challenges,
+                    &prev_sumcheck_challenges,
+                    wb_evaluation,
+                    wc_evaluation,
+                    alpha,
+                    beta
+                )
+            };
+    
+            if expected_claim != verify_result.last_claimed_sum {
+                return false;
+            }
         }
 
         prev_sumcheck_challenges = sumcheck_challenges.to_vec();
@@ -217,6 +238,18 @@ pub fn verify_succinct<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>,
         beta = transcript.random_challenge_as_field_element();
 
         claimed_sum = (alpha * wb_evaluation) + (beta * wc_evaluation);
+    }
+
+    // Verifying the commitment of the input polynomial 
+    // Using the sumcheck challenges as the random values at which the polynomial was opened by the prover.
+    let mid = prev_sumcheck_challenges.len() / 2;
+    let (rb_values, rc_values) = prev_sumcheck_challenges.split_at(mid);
+
+    let wb_verification = MultilinearKZG::verify(&trusted_setup, &proof.input_polynomial_commitment, &rb_values, &proof.input_rb_proof);
+    let wc_verification = MultilinearKZG::verify(&trusted_setup, &proof.input_polynomial_commitment, &rc_values, &proof.input_rc_proof);
+
+    if !wb_verification || !wc_verification {
+        return false;
     }
 
     true
@@ -340,60 +373,66 @@ pub fn compute_verifier_folded_claim<F: PrimeField> (
     (add_r * (wb_evaluation + wc_evaluation)) + (mul_r * (wb_evaluation * wc_evaluation))
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use ark_bn254::Fq;
-//     use circuit::arithmetic_circuit::{Gate, Layer, Operator};
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use circuit::arithmetic_circuit::{Gate, Layer, Operator};
+    use ark_bls12_381::{Bls12_381, Fr};
 
-//     #[test]
-//     pub fn test_gkr_protocol1() {
-//         let gate1 = Gate::new(0, 1, 0, Operator::Mul);
-//         let gate2 = Gate::new(0, 1, 0, Operator::Add);
-//         let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
+    #[test]
+    pub fn test_succinct_gkr_protocol1() {
+        let gate1 = Gate::new(0, 1, 0, Operator::Mul);
+        let gate2 = Gate::new(0, 1, 0, Operator::Add);
+        let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
         
-//         let layer0 = Layer::new(vec![gate1]);
-//         let layer1 = Layer::new(vec![gate2, gate3]);
+        let layer0 = Layer::new(vec![gate1]);
+        let layer1 = Layer::new(vec![gate2, gate3]);
 
-//         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
-//         let inputs = vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)];
+        let mut circuit = Circuit::<Fr>::new(vec![layer0, layer1]);
+        let inputs = vec![Fr::from(2), Fr::from(3), Fr::from(4), Fr::from(5)];
 
-//         let proof = prove(&mut circuit, &inputs);
+        let taus = vec![Fr::from(5), Fr::from(2)];
+        let trusted_setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
 
-//         assert_eq!(verify(&mut circuit, proof, &inputs), true);
-//     }
+        let succinct_proof = prove_succinct(&mut circuit, &inputs, &trusted_setup);
 
-//     #[test]
-//     pub fn test_gkr_protocol2() {
-//         // Layer 0
-//         let gate1 = Gate::new(0, 1, 0, Operator::Add);
-//         let layer0 = Layer::new(vec![gate1]);
+        assert_eq!(verify_succinct(&mut circuit, succinct_proof, &trusted_setup), true);
+    }
 
-//         // Layer 1
-//         let gate2 = Gate::new(0, 1, 0, Operator::Mul);
-//         let gate3 = Gate::new(2, 3, 1,  Operator::Add);
-//         let layer1 = Layer::new(vec![gate2, gate3]);
+    #[test]
+    pub fn test_gkr_protocol2() {
+        // Layer 0
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
+        let layer0 = Layer::new(vec![gate1]);
 
-//         let gate4 = Gate::new(0, 1, 0, Operator::Add);
-//         let gate5 = Gate::new(2, 3, 1, Operator::Add);
-//         let gate6 = Gate::new(4, 5, 2, Operator::Add);
-//         let gate7 = Gate::new(6, 7, 3, Operator::Add);
-//         let layer2 = Layer::new(vec![gate4, gate5, gate6, gate7]);
+        // Layer 1
+        let gate2 = Gate::new(0, 1, 0, Operator::Mul);
+        let gate3 = Gate::new(2, 3, 1,  Operator::Add);
+        let layer1 = Layer::new(vec![gate2, gate3]);
 
-//         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1, layer2]);
-//         let inputs = vec![
-//             Fq::from(1),
-//             Fq::from(2),
-//             Fq::from(3),
-//             Fq::from(4),
-//             Fq::from(5),
-//             Fq::from(6),
-//             Fq::from(7),
-//             Fq::from(8)
-//         ];
+        let gate4 = Gate::new(0, 1, 0, Operator::Add);
+        let gate5 = Gate::new(2, 3, 1, Operator::Add);
+        let gate6 = Gate::new(4, 5, 2, Operator::Add);
+        let gate7 = Gate::new(6, 7, 3, Operator::Add);
+        let layer2 = Layer::new(vec![gate4, gate5, gate6, gate7]);
 
-//         let proof = prove(&mut circuit, &inputs);
+        let mut circuit = Circuit::<Fr>::new(vec![layer0, layer1, layer2]);
+        let inputs = vec![
+            Fr::from(1),
+            Fr::from(2),
+            Fr::from(3),
+            Fr::from(4),
+            Fr::from(5),
+            Fr::from(6),
+            Fr::from(7),
+            Fr::from(8)
+        ];
 
-//         assert_eq!(verify(&mut circuit, proof, &inputs), true);
-//     }
-// }
+        let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
+        let trusted_setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
+
+        let succinct_proof = prove_succinct(&mut circuit, &inputs, &trusted_setup);
+
+        assert_eq!(verify_succinct(&mut circuit, succinct_proof, &trusted_setup), true);
+    }
+}

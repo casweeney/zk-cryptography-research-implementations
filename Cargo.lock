@@ -323,9 +323,12 @@ dependencies = [
 name = "gkr"
 version = "0.1.0"
 dependencies = [
+ "ark-bls12-381",
  "ark-bn254",
+ "ark-ec",
  "ark-ff",
  "circuit",
+ "multilinear_kzg",
  "polynomials",
  "sumcheck_protocol",
  "transcripts",
