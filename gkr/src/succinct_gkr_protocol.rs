@@ -354,7 +354,9 @@ mod tests {
             Fr::from(8)
         ];
 
-        let taus: Vec<Fr> = generate_values_for_tau(3); // used random values of tau
+        let input_polynomial = MultilinearPolynomial::new(&inputs);
+
+        let taus: Vec<Fr> = generate_values_for_tau(input_polynomial.number_of_variables() as usize); // used random values of tau
         let trusted_setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
 
         let succinct_proof = prove_succinct(&mut circuit, &inputs, &trusted_setup);
