@@ -1,5 +1,6 @@
 use ark_ff::PrimeField;
 use ark_ec::{pairing::Pairing, PrimeGroup};
+use rand::thread_rng;
 
 
 pub struct TrustedSetup<P: Pairing> {
@@ -73,6 +74,18 @@ pub fn compute_g2_powers_of_tau<P: Pairing, F: PrimeField>(taus: &[F]) -> Vec<P:
     g2_powers_of_tau
 }
 
+pub fn generate_values_for_tau<F: PrimeField>(number_of_variables: usize) -> Vec<F> {
+    let mut rng = thread_rng();
+    let mut values = Vec::with_capacity(number_of_variables);
+
+    for _ in 0..number_of_variables {
+        // Generate a random value and convert it to the PrimeField type
+        let random_value = F::rand(&mut rng);
+        values.push(random_value);
+    }
+
+    values
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -103,5 +116,12 @@ mod tests {
         let lagrange_basis = compute_lagrange_basis(&taus);
         let expected = vec![Fr::from(4), Fr::from(-8), Fr::from(-5), Fr::from(10)];
         assert_eq!(lagrange_basis, expected);
+    }
+
+    #[test]
+    fn test_generate_values_for_tau() {
+        let taus:Vec<Fr> = generate_values_for_tau(3);
+
+        assert_eq!(taus.len(), 3);
     }
 }
