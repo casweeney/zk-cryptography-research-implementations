@@ -266,6 +266,7 @@ mod tests {
     use super::*;
     use circuit::arithmetic_circuit::{Gate, Layer, Operator};
     use ark_bls12_381::{Bls12_381, Fr};
+    use multilinear_kzg::trusted_setup::generate_values_for_tau;
 
     #[test]
     pub fn test_succinct_gkr_protocol1() {
@@ -288,7 +289,7 @@ mod tests {
     }
 
     #[test]
-    pub fn test_gkr_protocol2() {
+    pub fn test_succinct_gkr_protocol2() {
         // Layer 0
         let gate1 = Gate::new(0, 1, 0, Operator::Add);
         let layer0 = Layer::new(vec![gate1]);
@@ -317,6 +318,43 @@ mod tests {
         ];
 
         let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
+        let trusted_setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
+
+        let succinct_proof = prove_succinct(&mut circuit, &inputs, &trusted_setup);
+
+        assert_eq!(verify_succinct(&mut circuit, succinct_proof, &trusted_setup), true);
+    }
+
+    #[test]
+    pub fn test_succinct_gkr_protocol_with_random_values_of_tau() {
+        // Layer 0
+        let gate1 = Gate::new(0, 1, 0, Operator::Add);
+        let layer0 = Layer::new(vec![gate1]);
+
+        // Layer 1
+        let gate2 = Gate::new(0, 1, 0, Operator::Mul);
+        let gate3 = Gate::new(2, 3, 1,  Operator::Add);
+        let layer1 = Layer::new(vec![gate2, gate3]);
+
+        let gate4 = Gate::new(0, 1, 0, Operator::Add);
+        let gate5 = Gate::new(2, 3, 1, Operator::Add);
+        let gate6 = Gate::new(4, 5, 2, Operator::Add);
+        let gate7 = Gate::new(6, 7, 3, Operator::Add);
+        let layer2 = Layer::new(vec![gate4, gate5, gate6, gate7]);
+
+        let mut circuit = Circuit::<Fr>::new(vec![layer0, layer1, layer2]);
+        let inputs = vec![
+            Fr::from(1),
+            Fr::from(2),
+            Fr::from(3),
+            Fr::from(4),
+            Fr::from(5),
+            Fr::from(6),
+            Fr::from(7),
+            Fr::from(8)
+        ];
+
+        let taus: Vec<Fr> = generate_values_for_tau(3); // used random values of tau
         let trusted_setup = TrustedSetup::<Bls12_381>::initialize_setup(&taus);
 
         let succinct_proof = prove_succinct(&mut circuit, &inputs, &trusted_setup);
