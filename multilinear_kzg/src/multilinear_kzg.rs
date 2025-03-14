@@ -1,33 +1,41 @@
 use std::marker::PhantomData;
 
-use ark_ff::{PrimeField, AdditiveGroup};
-use ark_ec::{pairing::{Pairing, PairingOutput}, PrimeGroup};
-use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use crate::trusted_setup::TrustedSetup;
+use ark_ec::{
+    pairing::{Pairing, PairingOutput},
+    PrimeGroup,
+};
+use ark_ff::{AdditiveGroup, PrimeField};
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 
 pub struct MultilinearKZG<F: PrimeField, P: Pairing> {
     _phantom_f: PhantomData<F>,
-    _phantom_p: PhantomData<P>
+    _phantom_p: PhantomData<P>,
 }
 
 #[derive(Clone, Debug)]
 pub struct MultilinearKZGProof<F: PrimeField, P: Pairing> {
     pub evaluation: F, // this is represented as "v" in the verification formula : it is the evaluation of the polynomial at verifier's selected points
-    pub proofs: Vec<P::G1> // this holds the proof, and the length is based on the number of variables in the polynomial
+    pub proofs: Vec<P::G1>, // this holds the proof, and the length is based on the number of variables in the polynomial
 }
 
-impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
+impl<F: PrimeField, P: Pairing> MultilinearKZG<F, P> {
     /// This function is used to commit to a polynomial
     /// The commitment is sent to the verifier, this commitment is what makes verification succinct
     pub fn commit_to_polynomial(
         polynomial: &MultilinearPolynomial<F>,
-        trusted_setup: &TrustedSetup<P>
+        trusted_setup: &TrustedSetup<P>,
     ) -> P::G1 {
-        assert_eq!(polynomial.evaluated_values.len(), trusted_setup.g1_powers_of_tau.len(), "Polynomial evaluation must match g1 length");
+        assert_eq!(
+            polynomial.evaluated_values.len(),
+            trusted_setup.g1_powers_of_tau.len(),
+            "Polynomial evaluation must match g1 length"
+        );
 
         // Commitment to a polynomial is basically a dot product operation between the values of the polynomial and the powers of tau.
         // The powers of tau is based on the lagrange basis of the variables over the boolean hypercube
-        let commitment = polynomial.evaluated_values
+        let commitment = polynomial
+            .evaluated_values
             .iter()
             .zip(trusted_setup.g1_powers_of_tau.iter())
             .map(|(evaluated_value, power)| power.mul_bigint(evaluated_value.into_bigint()))
@@ -42,10 +50,18 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
     pub fn open_and_prove(
         polynomial: &MultilinearPolynomial<F>,
         trusted_setup: &TrustedSetup<P>,
-        opening_values: &[F]
+        opening_values: &[F],
     ) -> MultilinearKZGProof<F, P> {
-        assert_eq!(polynomial.number_of_variables() as usize, opening_values.len(), "number of polynomial variables must match length of opening values");
-        assert_eq!(opening_values.len(), trusted_setup.g2_powers_of_tau.len(), "Opening values must match number of variables from trusted setup");
+        assert_eq!(
+            polynomial.number_of_variables() as usize,
+            opening_values.len(),
+            "number of polynomial variables must match length of opening values"
+        );
+        assert_eq!(
+            opening_values.len(),
+            trusted_setup.g2_powers_of_tau.len(),
+            "Opening values must match number of variables from trusted setup"
+        );
 
         let mut proofs: Vec<_> = Vec::with_capacity(opening_values.len());
 
@@ -55,7 +71,12 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
 
         // We need to subtract the evaluation from the polynomial to get: f(x) - v => f(a,b,c) - v
         // Where v => evaluation of polynomial at opening values
-        let polynomial_minus_v: Vec<F> = polynomial.evaluated_values.iter().map(|value| *value - evaluation_v).collect();
+        let polynomial_minus_v: Vec<F> = polynomial
+            .evaluated_values
+            .iter()
+            .map(|value| *value - evaluation_v)
+            .collect();
+
         let mut sub_polynomial = MultilinearPolynomial::new(&polynomial_minus_v); // f(a,b,c) - v => => This will be updated with the remainder polynomial
 
         // Let's generate the proofs to prove that the evaluation at the giving values is correct/valid.
@@ -67,7 +88,7 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
 
             // Get the quotient polynomial, which will be evaluated at tau, to get the proof of each iteration
             let quotient_polynomial = compute_quotient_polynomial(&sub_polynomial);
-            
+
             // With the quotient polynomial, compute the proof and push into the proofs vector
             // But before we need to blow up to replace the removed variable with zero so that
             // the quotient polynomial will have the same length with as lagrange basis polynomial for dot product operation
@@ -80,15 +101,20 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
                 .evaluated_values
                 .iter()
                 .zip(trusted_setup.g1_powers_of_tau.iter())
-                .map(|(evaluated_value, g1_power)| g1_power.mul_bigint(evaluated_value.into_bigint()))
+                .map(|(evaluated_value, g1_power)| {
+                    g1_power.mul_bigint(evaluated_value.into_bigint())
+                })
                 .sum();
 
             proofs.push(proof);
 
-
             // Compute remainder polynomial and update current polynomial with the remainder
             // This will be used in the next iteration
-            let remainder_polynomial = MultilinearPolynomial::partial_evaluate(&sub_polynomial.evaluated_values, 0, evaluating_value);
+            let remainder_polynomial = MultilinearPolynomial::partial_evaluate(
+                &sub_polynomial.evaluated_values,
+                0,
+                evaluating_value,
+            );
 
             sub_polynomial = remainder_polynomial;
         }
@@ -106,7 +132,7 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
         trusted_setup: &TrustedSetup<P>,
         commitment: &P::G1,
         opening_values: &[F],
-        proof: &MultilinearKZGProof<F, P>
+        proof: &MultilinearKZGProof<F, P>,
     ) -> bool {
         assert_eq!(
             opening_values.len(),
@@ -115,32 +141,36 @@ impl <F: PrimeField, P: Pairing>MultilinearKZG<F, P> {
         );
 
         // Compute LHS => g1_commitment - g1_evaluation * g2_1
-        let commitment_minus_v = *commitment - P::G1::generator().mul_bigint(proof.evaluation.into_bigint());
+        let commitment_minus_v =
+            *commitment - P::G1::generator().mul_bigint(proof.evaluation.into_bigint());
         let lhs = P::pairing(commitment_minus_v, P::G2::generator());
 
         // Compute RHS => Running summation of: (g1_Qi * (g2_tau - g2_xi))
         let mut rhs = PairingOutput::ZERO;
         for (i, tau) in trusted_setup.g2_powers_of_tau.iter().enumerate() {
-            rhs += P::pairing(proof.proofs[i], *tau - P::G2::generator().mul_bigint(opening_values[i].into_bigint()))
+            rhs += P::pairing(
+                proof.proofs[i],
+                *tau - P::G2::generator().mul_bigint(opening_values[i].into_bigint()),
+            )
         }
 
         lhs == rhs
     }
 }
 
-
 ////////////////////////////////////////
 ///         Helper Functions        ///
 //////////////////////////////////////
 
 fn compute_quotient_polynomial<F: PrimeField>(
-    polynomial: &MultilinearPolynomial<F>
+    polynomial: &MultilinearPolynomial<F>,
 ) -> MultilinearPolynomial<F> {
     let mid = polynomial.evaluated_values.len() / 2;
     let (evals_at_zero, evals_at_one) = polynomial.evaluated_values.split_at(mid);
-    
+
     // Perform element-wise subtraction: subtract partial evaluation at 0 from partial evaluation at 1
-    let quotient_evaluations: Vec<F> = evals_at_one.iter()
+    let quotient_evaluations: Vec<F> = evals_at_one
+        .iter()
         .zip(evals_at_zero.iter())
         .map(|(eval_at_one, eval_at_zero)| *eval_at_one - *eval_at_zero)
         .collect();
@@ -195,7 +225,7 @@ mod tests {
             Fr::from(0),
             Fr::from(4),
             Fr::from(3),
-            Fr::from(7)
+            Fr::from(7),
         ];
         let polynomial = MultilinearPolynomial::new(&values);
 

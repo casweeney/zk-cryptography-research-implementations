@@ -1,9 +1,8 @@
+use ark_ff::{BigInteger, PrimeField};
 use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use transcripts::fiat_shamir::{
-    fiat_shamir_transcript::Transcript,
-    interface::FiatShamirTranscriptInterface
+    fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface,
 };
-use ark_ff::{PrimeField, BigInteger};
 
 pub struct Prover<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
@@ -19,7 +18,7 @@ pub struct SumcheckProof<F: PrimeField> {
     pub round_univariate_polynomials: Vec<MultilinearPolynomial<F>>,
 }
 
-impl <F: PrimeField>Prover<F> {
+impl<F: PrimeField> Prover<F> {
     pub fn init(polynomial_evaluated_values: &Vec<F>) -> Self {
         let polynomial = MultilinearPolynomial::new(&polynomial_evaluated_values);
         let transcript = Transcript::new();
@@ -29,15 +28,17 @@ impl <F: PrimeField>Prover<F> {
             initial_claimed_sum: polynomial_evaluated_values.iter().sum(),
             transcript,
             round_univariate_polynomials: Vec::new(),
-            is_initialized: true
+            is_initialized: true,
         }
     }
 
     pub fn prove(&mut self) -> SumcheckProof<F> {
         assert!(self.is_initialized, "Can't prove without init");
 
-        self.transcript.append(&self.initial_polynomial.convert_to_bytes());
-        self.transcript.append(&field_element_to_bytes(self.initial_claimed_sum));
+        self.transcript
+            .append(&self.initial_polynomial.convert_to_bytes());
+        self.transcript
+            .append(&field_element_to_bytes(self.initial_claimed_sum));
 
         // This variable changes after the Initial polynomial is partially evaluated in each iteration using the random_challenge
         let mut current_polynomial = self.initial_polynomial.evaluated_values.clone();
@@ -49,14 +50,17 @@ impl <F: PrimeField>Prover<F> {
             let univariate_polynomial_values = split_polynomial_and_sum_each(&current_polynomial);
             let univariate_polynomial = MultilinearPolynomial::new(&univariate_polynomial_values);
             let univariate_poly_in_bytes = univariate_polynomial.convert_to_bytes();
-            self.round_univariate_polynomials.push(univariate_polynomial);
+            self.round_univariate_polynomials
+                .push(univariate_polynomial);
             self.transcript.append(&univariate_poly_in_bytes);
 
             // Get random challenge <- from Transcript
             let random_challenge: F = self.transcript.random_challenge_as_field_element();
 
             // Partial evaluate current polynomial using the random_challenge
-            current_polynomial = MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge).evaluated_values;
+            current_polynomial =
+                MultilinearPolynomial::partial_evaluate(&current_polynomial, 0, random_challenge)
+                    .evaluated_values;
         }
 
         SumcheckProof {
@@ -67,7 +71,9 @@ impl <F: PrimeField>Prover<F> {
     }
 }
 
-pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values: &Vec<F>) -> Vec<F> {
+pub fn split_polynomial_and_sum_each<F: PrimeField>(
+    polynomial_evaluated_values: &Vec<F>,
+) -> Vec<F> {
     let mut univariate_polynomial: Vec<F> = Vec::with_capacity(2);
 
     let mid = polynomial_evaluated_values.len() / 2;
@@ -85,7 +91,6 @@ pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values:
 pub fn field_element_to_bytes<F: PrimeField>(field_element: F) -> Vec<u8> {
     field_element.into_bigint().to_bytes_be()
 }
-
 
 #[cfg(test)]
 mod test {

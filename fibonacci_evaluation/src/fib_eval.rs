@@ -1,9 +1,25 @@
-use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
 use ark_ff::PrimeField;
+use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
 
 pub fn evaluation<F: PrimeField>(evaluation_value: F) -> F {
-    let x_values = vec![F::from(1), F::from(2), F::from(3), F::from(4), F::from(5), F::from(6), F::from(7)];
-    let y_values = vec![F::from(1), F::from(2), F::from(3), F::from(5), F::from(8), F::from(13), F::from(21)];
+    let x_values = vec![
+        F::from(1),
+        F::from(2),
+        F::from(3),
+        F::from(4),
+        F::from(5),
+        F::from(6),
+        F::from(7),
+    ];
+    let y_values = vec![
+        F::from(1),
+        F::from(2),
+        F::from(3),
+        F::from(5),
+        F::from(8),
+        F::from(13),
+        F::from(21),
+    ];
 
     let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
@@ -29,12 +45,15 @@ mod test {
 
         for x in 1..=7 {
             let value = Fq::from(x);
-            
+
             if x > 2 {
                 let value_sub_one = value - Fq::from(1);
                 let value_sub_two = value - Fq::from(2);
 
-                assert_eq!(evaluation(value), evaluation(value_sub_one) + evaluation(value_sub_two));
+                assert_eq!(
+                    evaluation(value),
+                    evaluation(value_sub_one) + evaluation(value_sub_two)
+                );
             }
         }
     }
@@ -54,7 +73,7 @@ mod test {
 
     //     for x in 8..=10 {
     //         let value = Fq::from(x);
-            
+
     //         if x > 2 {
     //             let value_sub_one = value - Fq::from(1);
     //             let value_sub_two = value - Fq::from(2);

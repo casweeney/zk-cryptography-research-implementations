@@ -1,17 +1,17 @@
-use ark_ff::{PrimeField, BigInteger};
+use ark_ff::{BigInteger, PrimeField};
 
 // This implementation of Multi linear interpolation uses an evaluation over the boolean hypercube
 // then the values from the boolean hypercube evaluation is used as the polynomial
 // which will be evaluated at a given variable values using partial evaluation
 #[derive(Debug, Clone, PartialEq)]
 pub struct MultilinearPolynomial<F: PrimeField> {
-    pub evaluated_values: Vec<F>
+    pub evaluated_values: Vec<F>,
 }
 
-impl <F: PrimeField>MultilinearPolynomial<F> {
+impl<F: PrimeField> MultilinearPolynomial<F> {
     pub fn new(evaluated_values: &[F]) -> Self {
         Self {
-            evaluated_values: evaluated_values.to_vec()
+            evaluated_values: evaluated_values.to_vec(),
         }
     }
 
@@ -45,7 +45,8 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
     }
 
     pub fn scalar_mul(&self, scalar: F) -> Self {
-        let scaled_values: Vec<F> = self.evaluated_values
+        let scaled_values: Vec<F> = self
+            .evaluated_values
             .iter()
             .map(|value| *value * scalar)
             .collect();
@@ -75,14 +76,15 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
             // a b c
             // using evaluating_variable as variable index in boolean hypercube
             let power = number_of_variables - 1 - evaluating_variable;
-            
+
             let second_pair_value = polynomial[j | (1 << power)]; // y2
 
             // using the formula: y1 + r(y2 - y1)
             // y1 => first_pair_value
             // y2 => second_pair_value
             // r => value
-            result_polynomial.push(first_pair_value + (value * (second_pair_value - first_pair_value)));
+            result_polynomial
+                .push(first_pair_value + (value * (second_pair_value - first_pair_value)));
 
             i += 1;
 
@@ -101,7 +103,10 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
         MultilinearPolynomial::new(&result_polynomial)
     }
 
-    pub fn polynomial_tensor_add(w_b: &MultilinearPolynomial<F>, w_c: &MultilinearPolynomial<F>) -> MultilinearPolynomial<F> {
+    pub fn polynomial_tensor_add(
+        w_b: &MultilinearPolynomial<F>,
+        w_c: &MultilinearPolynomial<F>,
+    ) -> MultilinearPolynomial<F> {
         assert!(w_b.evaluated_values.len() == w_c.evaluated_values.len());
 
         let mut add_result = Vec::new();
@@ -115,8 +120,14 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
         MultilinearPolynomial::new(&add_result)
     }
 
-    pub fn polynomial_tensor_mul(w_b: &MultilinearPolynomial<F>, w_c: &MultilinearPolynomial<F>) -> MultilinearPolynomial<F> {
-        assert!(w_b.evaluated_values.len() == w_c.evaluated_values.len(), "different polynomial length");
+    pub fn polynomial_tensor_mul(
+        w_b: &MultilinearPolynomial<F>,
+        w_c: &MultilinearPolynomial<F>,
+    ) -> MultilinearPolynomial<F> {
+        assert!(
+            w_b.evaluated_values.len() == w_c.evaluated_values.len(),
+            "different polynomial length"
+        );
 
         let mut mul_result = Vec::new();
 
@@ -128,8 +139,11 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
 
         MultilinearPolynomial::new(&mul_result)
     }
-    
-    pub fn add_polynomials(poly1: &MultilinearPolynomial<F>, poly2: &MultilinearPolynomial<F>) -> Self {
+
+    pub fn add_polynomials(
+        poly1: &MultilinearPolynomial<F>,
+        poly2: &MultilinearPolynomial<F>,
+    ) -> Self {
         assert_eq!(
             poly1.evaluated_values.len(),
             poly2.evaluated_values.len(),
@@ -147,7 +161,6 @@ impl <F: PrimeField>MultilinearPolynomial<F> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -157,14 +170,35 @@ mod tests {
     fn test_partial_evaluate() {
         let polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(8)];
 
-        assert_eq!(MultilinearPolynomial::partial_evaluate(&polynomial, 0, Fq::from(6)), MultilinearPolynomial::new(&vec![Fq::from(18), Fq::from(48)]));
-        assert_eq!(MultilinearPolynomial::partial_evaluate(&polynomial, 1, Fq::from(2)), MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(13)]));
+        assert_eq!(
+            MultilinearPolynomial::partial_evaluate(&polynomial, 0, Fq::from(6)),
+            MultilinearPolynomial::new(&vec![Fq::from(18), Fq::from(48)])
+        );
+        assert_eq!(
+            MultilinearPolynomial::partial_evaluate(&polynomial, 1, Fq::from(2)),
+            MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(13)])
+        );
 
         let small_polynomial = vec![Fq::from(18), Fq::from(48)];
-        assert_eq!(MultilinearPolynomial::partial_evaluate(&small_polynomial, 0, Fq::from(2)), MultilinearPolynomial::new(&vec![Fq::from(78)]));
+        assert_eq!(
+            MultilinearPolynomial::partial_evaluate(&small_polynomial, 0, Fq::from(2)),
+            MultilinearPolynomial::new(&vec![Fq::from(78)])
+        );
 
-        let bigger_polynomial = vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(0), Fq::from(0), Fq::from(2), Fq::from(5)];
-        assert_eq!(MultilinearPolynomial::partial_evaluate(&bigger_polynomial, 2, Fq::from(3)), MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)]));
+        let bigger_polynomial = vec![
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(3),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(2),
+            Fq::from(5),
+        ];
+        assert_eq!(
+            MultilinearPolynomial::partial_evaluate(&bigger_polynomial, 2, Fq::from(3)),
+            MultilinearPolynomial::new(&vec![Fq::from(0), Fq::from(9), Fq::from(0), Fq::from(11)])
+        );
     }
 
     #[test]
@@ -182,7 +216,7 @@ mod tests {
         let wb = MultilinearPolynomial::new(&vec![Fq::from(1), Fq::from(2)]);
         // w(c) = [3,4] (one variable)
         let wc = MultilinearPolynomial::new(&vec![Fq::from(3), Fq::from(4)]);
-        
+
         let result = MultilinearPolynomial::polynomial_tensor_add(&wb, &wc);
 
         // Result should be [4,5,5,6] representing w(b,c) at points (0,0),(0,1),(1,0),(1,1)
@@ -190,9 +224,9 @@ mod tests {
             Fq::from(4), // 1+3
             Fq::from(5), // 1+4
             Fq::from(5), // 2+3
-            Fq::from(6)  // 2+4
+            Fq::from(6), // 2+4
         ]);
-        
+
         assert_eq!(result, expected);
     }
 
@@ -200,7 +234,7 @@ mod tests {
     fn test_polynomial_tensor_mul() {
         // w(b) = [2,3]
         let w_b = MultilinearPolynomial::new(&vec![Fq::from(2), Fq::from(3)]);
-        
+
         // w(c) = [4,5]
         let w_c = MultilinearPolynomial::new(&vec![Fq::from(4), Fq::from(5)]);
 
@@ -217,7 +251,7 @@ mod tests {
             Fq::from(8),
             Fq::from(10),
             Fq::from(12),
-            Fq::from(15)
+            Fq::from(15),
         ]);
 
         assert_eq!(result, expected);
@@ -227,7 +261,7 @@ mod tests {
     #[should_panic(expected = "different polynomial length")]
     fn test_polynomial_tensor_mul_different_lengths() {
         let w_b = MultilinearPolynomial::new(&vec![Fq::from(2), Fq::from(3)]);
-        let w_c = MultilinearPolynomial::new(&vec![Fq::from(4)]);  // Different length
+        let w_c = MultilinearPolynomial::new(&vec![Fq::from(4)]); // Different length
 
         // Should panic due to different lengths
         MultilinearPolynomial::polynomial_tensor_mul(&w_b, &w_c);

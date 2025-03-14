@@ -1,14 +1,13 @@
-use ark_ff::PrimeField;
 use ark_ec::{pairing::Pairing, PrimeGroup};
+use ark_ff::PrimeField;
 use rand::thread_rng;
-
 
 pub struct TrustedSetup<P: Pairing> {
     pub g1_powers_of_tau: Vec<P::G1>, // used for evaluation of multilinear polynomial by performing dot product
-    pub g2_powers_of_tau: Vec<P::G2> // used for verification where (tau - a) will be used
+    pub g2_powers_of_tau: Vec<P::G2>, // used for verification where (tau - a) will be used
 }
 
-impl <P: Pairing>TrustedSetup<P> {
+impl<P: Pairing> TrustedSetup<P> {
     pub fn initialize_setup<F: PrimeField>(taus: &[F]) -> Self {
         let lagrange_basis = compute_lagrange_basis(taus);
 
@@ -17,7 +16,7 @@ impl <P: Pairing>TrustedSetup<P> {
 
         Self {
             g1_powers_of_tau,
-            g2_powers_of_tau
+            g2_powers_of_tau,
         }
     }
 }
@@ -95,7 +94,7 @@ mod tests {
     fn test_compute_lagrange_basis() {
         let taus = vec![Fr::from(5), Fr::from(2), Fr::from(3)];
         let lagrange_basis = compute_lagrange_basis(&taus);
-        
+
         let expected_lagrange_basis = vec![
             Fr::from(-8),
             Fr::from(12),
@@ -120,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_generate_values_for_tau() {
-        let taus:Vec<Fr> = generate_values_for_tau(3);
+        let taus: Vec<Fr> = generate_values_for_tau(3);
 
         assert_eq!(taus.len(), 3);
     }

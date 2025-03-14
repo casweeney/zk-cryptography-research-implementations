@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use ark_bls12_381::Fr;
     use crate::basic_sumcheck::prover::Prover;
     use crate::basic_sumcheck::verifier::Verifier;
+    use ark_bls12_381::Fr;
 
     #[test]
     fn test_sumcheck_protocol_init() {

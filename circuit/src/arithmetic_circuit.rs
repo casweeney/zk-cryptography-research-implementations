@@ -1,10 +1,10 @@
 use ark_ff::PrimeField;
-use std::marker::PhantomData;
 use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
+use std::marker::PhantomData;
 
 pub enum Operator {
     Add,
-    Mul
+    Mul,
 }
 
 pub struct Gate {
@@ -12,31 +12,36 @@ pub struct Gate {
     pub right_index: usize,
     // Used to decide the index position where a gate result will be placed in the output vector
     pub output_index: usize,
-    pub operator: Operator
+    pub operator: Operator,
 }
 
 pub struct Layer {
-    pub gates: Vec<Gate>
+    pub gates: Vec<Gate>,
 }
 
 pub struct Circuit<F: PrimeField> {
     pub layers: Vec<Layer>,
-    _phantom: PhantomData<F>
+    _phantom: PhantomData<F>,
 }
 
 pub struct CircuitEvaluationResult<F: PrimeField> {
     pub output: Vec<F>,
-    pub layer_evaluations: Vec<Vec<F>>
+    pub layer_evaluations: Vec<Vec<F>>,
 }
 
 //////////////// Gate Implementation ///////////////////
 impl Gate {
-    pub fn new(left_index: usize, right_index: usize, output_index: usize, operator: Operator) -> Self {
+    pub fn new(
+        left_index: usize,
+        right_index: usize,
+        output_index: usize,
+        operator: Operator,
+    ) -> Self {
         Self {
             left_index,
             right_index,
             output_index,
-            operator
+            operator,
         }
     }
 }
@@ -44,18 +49,16 @@ impl Gate {
 /////////////// Layer implementation ///////////////////
 impl Layer {
     pub fn new(gates: Vec<Gate>) -> Self {
-        Self {
-            gates
-        }
+        Self { gates }
     }
 }
 
 //////////////// Circuit Implementation /////////////////
-impl <F: PrimeField>Circuit<F> {
+impl<F: PrimeField> Circuit<F> {
     pub fn new(layers: Vec<Layer>) -> Self {
         Self {
             layers,
-            _phantom: PhantomData
+            _phantom: PhantomData,
         }
     }
 
@@ -67,15 +70,17 @@ impl <F: PrimeField>Circuit<F> {
 
         // Iterate through the layers vector: in each iteration, iterate through the gates of each layer
         for layer in self.layers.iter().rev() {
-            let max_output_index = layer.gates.iter()
+            let max_output_index = layer
+                .gates
+                .iter()
                 .map(|gate| gate.output_index)
                 .max()
                 .unwrap_or(0);
 
             let mut resultant_evaluations = vec![F::zero(); max_output_index + 1];
 
-            // Iterate through the gates vector of each layer: 
-            // use the left_index, right_index and operator of each Gate struct to perform an operation 
+            // Iterate through the gates vector of each layer:
+            // use the left_index, right_index and operator of each Gate struct to perform an operation
             // based on the values in the left and right index positions.
             // The operation is based on the Operator of the Gate: Add or Mul
             for gate in layer.gates.iter() {
@@ -84,7 +89,7 @@ impl <F: PrimeField>Circuit<F> {
 
                 let current_gate_evaluation = match gate.operator {
                     Operator::Add => left_index_value + right_index_value,
-                    Operator::Mul => left_index_value * right_index_value
+                    Operator::Mul => left_index_value * right_index_value,
                 };
 
                 // place the result of the evaluation of each gate at the specified output index
@@ -99,20 +104,29 @@ impl <F: PrimeField>Circuit<F> {
 
         CircuitEvaluationResult {
             output: reversed_evaluations[0].clone(),
-            layer_evaluations: reversed_evaluations
+            layer_evaluations: reversed_evaluations,
         }
     }
 
     // This function gets the evaluations of a layer: Vec<F> whose index is passed as layer_index,
     // then it converts it to a Multilinear polynomial
     // This will be used for the MLE: Multilinear Extension
-    pub fn w_i_polynomial(circuit_evaluation: &CircuitEvaluationResult<F>, layer_index: usize) -> MultilinearPolynomial<F> {
-        assert!(layer_index < circuit_evaluation.layer_evaluations.len(), "layer index out of bounds");
+    pub fn w_i_polynomial(
+        circuit_evaluation: &CircuitEvaluationResult<F>,
+        layer_index: usize,
+    ) -> MultilinearPolynomial<F> {
+        assert!(
+            layer_index < circuit_evaluation.layer_evaluations.len(),
+            "layer index out of bounds"
+        );
 
         MultilinearPolynomial::new(&circuit_evaluation.layer_evaluations[layer_index])
     }
 
-    pub fn add_i_and_mul_i_mle(&mut self, layer_index: usize) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
+    pub fn add_i_and_mul_i_mle(
+        &mut self,
+        layer_index: usize,
+    ) -> (MultilinearPolynomial<F>, MultilinearPolynomial<F>) {
         let number_of_layer_variables = num_of_layer_variables(layer_index);
         let boolean_hypercube_combinations = 1 << number_of_layer_variables; // 2 ^ number_of_layer_variables
 
@@ -122,11 +136,21 @@ impl <F: PrimeField>Circuit<F> {
         for gate in self.layers[layer_index].gates.iter() {
             match gate.operator {
                 Operator::Add => {
-                    let position_index = convert_to_binary_and_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    let position_index = convert_to_binary_and_to_decimal(
+                        layer_index,
+                        gate.output_index,
+                        gate.left_index,
+                        gate.right_index,
+                    );
                     add_i_values[position_index] = F::one();
-                },
+                }
                 Operator::Mul => {
-                    let position_index = convert_to_binary_and_to_decimal(layer_index, gate.output_index, gate.left_index, gate.right_index);
+                    let position_index = convert_to_binary_and_to_decimal(
+                        layer_index,
+                        gate.output_index,
+                        gate.left_index,
+                        gate.right_index,
+                    );
                     mul_i_values[position_index] = F::one();
                 }
             }
@@ -138,7 +162,6 @@ impl <F: PrimeField>Circuit<F> {
         (add_i_polynomial, mul_i_polynomial)
     }
 }
-
 
 pub fn num_of_layer_variables(layer_index: usize) -> usize {
     if layer_index == 0 {
@@ -154,7 +177,12 @@ pub fn num_of_layer_variables(layer_index: usize) -> usize {
     num_of_variables
 }
 
-pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, variable_b: usize, variable_c: usize) -> usize {
+pub fn convert_to_binary_and_to_decimal(
+    layer_index: usize,
+    variable_a: usize,
+    variable_b: usize,
+    variable_c: usize,
+) -> usize {
     // convert decimal to binary
     let a_in_binary = convert_decimal_to_padded_binary(variable_a, layer_index);
     let b_in_binary = convert_decimal_to_padded_binary(variable_b, layer_index + 1);
@@ -162,7 +190,7 @@ pub fn convert_to_binary_and_to_decimal(layer_index: usize, variable_a: usize, v
 
     // combine a, b and c binaries
     let combined_binary = a_in_binary + &b_in_binary + &c_in_binary;
-    
+
     // convert the combined binaries back to decimal
     usize::from_str_radix(&combined_binary, 2).unwrap_or(0)
 }
@@ -176,7 +204,7 @@ pub fn transform_decimal_to_padded_binary(decimal_number: usize, mut bit_length:
     if bit_length == 0 {
         bit_length = 1;
     }
-    
+
     let binary = format!("{:b}", decimal_number);
 
     "0".repeat(bit_length.saturating_sub(binary.len())) + &binary
@@ -193,8 +221,8 @@ mod tests {
 
         let gate1 = Gate::new(0, 1, 0, Operator::Mul);
         let gate2 = Gate::new(0, 1, 0, Operator::Add);
-        let gate3 = Gate::new(2, 3, 1,  Operator::Mul);
-        
+        let gate3 = Gate::new(2, 3, 1, Operator::Mul);
+
         let layer0 = Layer::new(vec![gate1]);
         let layer1 = Layer::new(vec![gate2, gate3]);
 
@@ -205,7 +233,7 @@ mod tests {
         let expected_layers_evaluation = vec![
             vec![Fq::from(100)],
             vec![Fq::from(5), Fq::from(20)],
-            vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)]
+            vec![Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5)],
         ];
 
         assert_eq!(result.output[0], Fq::from(100));
@@ -215,7 +243,7 @@ mod tests {
     #[test]
     fn test_circuit_evaluation2() {
         let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)];
-        
+
         let gate1 = Gate::new(0, 1, 0, Operator::Add);
         // switched output index
         let gate2 = Gate::new(0, 1, 1, Operator::Add);
@@ -230,7 +258,7 @@ mod tests {
         let expected_layers_evaluation = vec![
             vec![Fq::from(15)],
             vec![Fq::from(12), Fq::from(3)],
-            vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)]
+            vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4)],
         ];
 
         assert_eq!(result.output[0], Fq::from(15));
@@ -239,11 +267,20 @@ mod tests {
 
     #[test]
     fn test_circuit_evaluation3() {
-        let input = vec![Fq::from(1), Fq::from(2), Fq::from(3), Fq::from(4), Fq::from(5), Fq::from(6), Fq::from(7), Fq::from(8)];
+        let input = vec![
+            Fq::from(1),
+            Fq::from(2),
+            Fq::from(3),
+            Fq::from(4),
+            Fq::from(5),
+            Fq::from(6),
+            Fq::from(7),
+            Fq::from(8),
+        ];
 
         // layer 0 gates
         let gate1 = Gate::new(0, 1, 0, Operator::Add);
-        
+
         // layer 1 gates
         let gate2 = Gate::new(0, 1, 0, Operator::Add);
         let gate3 = Gate::new(2, 3, 1, Operator::Mul);
@@ -292,13 +329,27 @@ mod tests {
         let mut circuit = Circuit::<Fq>::new(vec![layer0, layer1]);
 
         let (add_i_poly, mul_i_poly) = circuit.add_i_and_mul_i_mle(0);
-        let expected_add_i_poly = MultilinearPolynomial::new(
-            &vec![Fq::from(0), Fq::from(1), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
-        );
+        let expected_add_i_poly = MultilinearPolynomial::new(&vec![
+            Fq::from(0),
+            Fq::from(1),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+        ]);
 
-        let expected_mul_i_poly = MultilinearPolynomial::new(
-            &vec![Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0), Fq::from(0)]
-        );
+        let expected_mul_i_poly = MultilinearPolynomial::new(&vec![
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+            Fq::from(0),
+        ]);
 
         assert_eq!(add_i_poly, expected_add_i_poly);
         assert_eq!(mul_i_poly, expected_mul_i_poly);
@@ -321,11 +372,11 @@ mod tests {
 
         // For layer 1: 2^5 = 32 combinations
         let mut expected_add = vec![Fq::from(0); 32];
-        expected_add[17] = Fq::from(1);  // position from gate2: "10001" = 17
+        expected_add[17] = Fq::from(1); // position from gate2: "10001" = 17
         let expected_add_i_poly = MultilinearPolynomial::new(&expected_add);
 
         let mut expected_mul = vec![Fq::from(0); 32];
-        expected_mul[11] = Fq::from(1);  // position from gate3: "01011" = 11
+        expected_mul[11] = Fq::from(1); // position from gate3: "01011" = 11
         let expected_mul_i_poly = MultilinearPolynomial::new(&expected_mul);
 
         assert_eq!(add_i_poly, expected_add_i_poly);

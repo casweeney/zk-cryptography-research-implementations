@@ -1,22 +1,21 @@
-use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 use ark_ff::PrimeField;
-
+use polynomials::multilinear::evaluation_form::MultilinearPolynomial;
 
 /////// Prover Implementation Starts Here ///////////
 pub struct Prover<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
     pub initial_claimed_sum: F,
     pub current_polynomial: Vec<F>,
-    pub round: usize
+    pub round: usize,
 }
 
-impl <F: PrimeField>Prover<F> {
+impl<F: PrimeField> Prover<F> {
     pub fn new(evaluated_values: &Vec<F>) -> Self {
         Self {
             initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             initial_claimed_sum: evaluated_values.iter().sum(),
             current_polynomial: evaluated_values.to_vec(),
-            round: 0
+            round: 0,
         }
     }
 
@@ -27,17 +26,27 @@ impl <F: PrimeField>Prover<F> {
             self.round += 1;
             (self.initial_claimed_sum, univariate)
         } else {
-            self.current_polynomial = MultilinearPolynomial::partial_evaluate(&self.current_polynomial, 0, random_challenge).evaluated_values;
+            self.current_polynomial = MultilinearPolynomial::partial_evaluate(
+                &self.current_polynomial,
+                0,
+                random_challenge,
+            )
+            .evaluated_values;
             let new_claimed_sum = self.current_polynomial.iter().sum();
 
             self.round += 1;
 
-            (new_claimed_sum, split_polynomial_and_sum_each(&self.current_polynomial))
+            (
+                new_claimed_sum,
+                split_polynomial_and_sum_each(&self.current_polynomial),
+            )
         }
     }
 }
 
-pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values: &Vec<F>) -> Vec<F> {
+pub fn split_polynomial_and_sum_each<F: PrimeField>(
+    polynomial_evaluated_values: &Vec<F>,
+) -> Vec<F> {
     let mut univariate_polynomial: Vec<F> = Vec::with_capacity(2);
 
     let mid = polynomial_evaluated_values.len() / 2;
@@ -53,22 +62,21 @@ pub fn split_polynomial_and_sum_each<F: PrimeField>(polynomial_evaluated_values:
 }
 /////// Prover Implementation Ends Here ///////////
 
-
 /////// Verifier Implementation Starts Here //////////
 pub struct Verifier<F: PrimeField> {
     pub initial_polynomial: MultilinearPolynomial<F>,
     pub current_claimed_sum: F,
     pub challenges: Vec<F>,
-    pub round: usize
+    pub round: usize,
 }
 
-impl <F: PrimeField>Verifier<F> {
+impl<F: PrimeField> Verifier<F> {
     pub fn new(evaluated_values: &Vec<F>) -> Self {
         Self {
             initial_polynomial: MultilinearPolynomial::new(&evaluated_values),
             current_claimed_sum: F::zero(),
             challenges: Vec::new(),
-            round: 0
+            round: 0,
         }
     }
 
@@ -106,7 +114,6 @@ impl <F: PrimeField>Verifier<F> {
 }
 /////// Verifier Implementation Ends Here //////////
 
-
 /////// Interactive Sumcheck Protocol Simulation Starts Here //////////
 #[cfg(test)]
 mod tests {
@@ -132,7 +139,10 @@ mod tests {
         let (claimed_sum, univariate) = prover.prove(Fr::from(0)); // Zero challenge not used in first round
 
         // cargo test -- --nocapture
-        println!("Round 0 - Claimed sum: {:?}, Univariate: {:?}", claimed_sum, univariate);
+        println!(
+            "Round 0 - Claimed sum: {:?}, Univariate: {:?}",
+            claimed_sum, univariate
+        );
 
         assert!(verifier.verify(claimed_sum, univariate));
 
@@ -144,18 +154,24 @@ mod tests {
             let (claimed_sum, univariate) = prover.prove(challenge);
 
             // cargo test -- --nocapture
-            println!("Round {} - Challenge: {:?}, Claimed sum: {:?}, Univariate: {:?}", i+1, challenge, claimed_sum, univariate);
+            println!(
+                "Round {} - Challenge: {:?}, Claimed sum: {:?}, Univariate: {:?}",
+                i + 1,
+                challenge,
+                claimed_sum,
+                univariate
+            );
 
             assert!(verifier.verify(claimed_sum, univariate));
         }
-        
+
         assert!(verifier.oracle_check());
     }
 }
 
 // Summary of the test:
-// The first eval is not where the round starts. 
+// The first eval is not where the round starts.
 // The first eval is just the prover sending the initial claimed sum of the original polynomial and a univariate polynomial to prove the sum.
 
-// A round starts when the verifier generates a random challenge, 
+// A round starts when the verifier generates a random challenge,
 // and the random challenge generation will be 3 which is the number of variables, anything less than that will fail.
