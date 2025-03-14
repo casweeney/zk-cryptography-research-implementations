@@ -19,6 +19,8 @@ pub struct SumcheckVerifierProof<F: PrimeField> {
     pub last_claimed_sum: F,
 }
 
+// The prove function is performing sumcheck on a SumPolynomial which is a combination of two ProductPolynomial that also holds two MultilinearPolynomial
+// This implies that this particular implementation of Sumcheck prove, is running of 4 MultilinearPolynomials at the same time
 pub fn prove<F: PrimeField>(
     sum_polynomial: SumPolynomial<F>,
     claimed_sum: F,
@@ -33,6 +35,8 @@ pub fn prove<F: PrimeField>(
     transcript.append(&field_element_to_bytes(claimed_sum));
 
     for _round in 0..number_of_variables {
+        // This line of code that generates the round univariate polynomial does the major computation in this function
+        // The generate_round_univariate() function perform a chain of partial evaluation on 4 polynomials at the same time.
         let univariate = generate_round_univariate(&current_polynomial);
 
         // Handle interpolation of the univariate values, to get the univariate polynomial
@@ -100,15 +104,31 @@ pub fn verify<F: PrimeField>(
     }
 }
 
+/// This function generates the univariate polynomial which is regarded as the proof for each sumcheck round: number of rounds is based on number of polynomial variables
+/// The univariate polynomial is generated using (degree + 1) points, since we need (degree + 1) points to represent a UnivariatePolynomial
+/// We are using this approach because we want to run Sumcheck concurrently on the individual polynomials (4 - polynomials) that makes up the SumPolynomial: f(b,c) polynomial
+/// This is because we can't combine the polynomials together to be a single polynomial, if we do that, we would get a polynomial with powers greater than one.
+/// Hence we won't be able to use the polynomial as a MultilinearPolynomial that is evaluated over the boolean hypercube. We might be forced to work with a 3HC structure, which we are avoiding.
 pub fn generate_round_univariate<F: PrimeField>(current_polynomial: &SumPolynomial<F>) -> Vec<F> {
     let degree = current_polynomial.degree();
     let num_evaluations = degree + 1;
 
+    // This vector holds each evaluation of the for loop below: The evaluations is the UnivariatePolynomial evaluations points
     let mut evaluations = Vec::with_capacity(num_evaluations);
 
+    // For every iteration, we partially evaluate each of the 4 MultilinearPolynomial at the same variable across all 4 polynomials,
+    // This iteration will run at (degree + 1) number of times
+    // Then we perform an element-wise addition on the SumPolynomial, which calls an element-wise product on the ProductPolynomial
+    // The result of the element-wise operations will be a single MultilinearPolynomial,
+    // Then we sum all the evaluations of the MultilinearPolynomial from the element-wise operations, to get a value (FieldElement)
+    // That value, will be one the evaluation of the UnivariatePolynomial, that means if (degree + 1) is 3,
+    // the loop will run 3 times and there will be 3 evaluation points representing the UnivariatePolynomial
     for i in 0..num_evaluations {
         let value = F::from(i as u64);
         let partial_eval_sum_poly = current_polynomial.partial_evaluate(0, value); // holding Vec<ProductPoly> : length of 2
+
+        // Performing a chain of element-wise operation to combine the 4 MultilinearPolynomial to a single MultilinearPolynomial
+        // Then sum the values to get a single value (Field Element) - represent an evaluation of the UnivariatePolynomial
         let evaluation = partial_eval_sum_poly
             .add_polynomials_element_wise()
             .evaluated_values
