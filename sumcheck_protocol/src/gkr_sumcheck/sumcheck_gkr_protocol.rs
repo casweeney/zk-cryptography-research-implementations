@@ -19,7 +19,7 @@ pub struct SumcheckVerifierProof<F: PrimeField> {
     pub last_claimed_sum: F,
 }
 
-// The prove function is performing sumcheck on a SumPolynomial which is a combination of two ProductPolynomial that also holds two MultilinearPolynomial
+// The prove function is performing sumcheck on a SumPolynomial which is a combination of two ProductPolynomial that also holds two MultilinearPolynomials each.
 // This implies that this particular implementation of Sumcheck prove, is running of 4 MultilinearPolynomials at the same time
 pub fn prove<F: PrimeField>(
     sum_polynomial: SumPolynomial<F>,
@@ -35,8 +35,9 @@ pub fn prove<F: PrimeField>(
     transcript.append(&field_element_to_bytes(claimed_sum));
 
     for _round in 0..number_of_variables {
-        // This line of code that generates the round univariate polynomial does the major computation in this function
-        // The generate_round_univariate() function perform a chain of partial evaluation on 4 polynomials at the same time.
+        // The generate_round_univariate() generates a round univariate polynomial for each sumcheck round.
+        // It does the major computation in this function.
+        // It performs partial evaluation simultaneously on 4 polynomials at the same time and at the same variable.
         let univariate = generate_round_univariate(&current_polynomial);
 
         // Handle interpolation of the univariate values, to get the univariate polynomial
@@ -106,7 +107,7 @@ pub fn verify<F: PrimeField>(
 
 /// This function generates the univariate polynomial which is regarded as the proof for each sumcheck round: number of rounds is based on number of polynomial variables
 /// The univariate polynomial is generated using (degree + 1) points, since we need (degree + 1) points to represent a UnivariatePolynomial
-/// We are using this approach because we want to run Sumcheck concurrently on the individual polynomials (4 - polynomials) that makes up the SumPolynomial: f(b,c) polynomial
+/// We are using this approach because we want to run Sumcheck simultaneously on the individual polynomials (4 - polynomials) that makes up the SumPolynomial: f(b,c) polynomial
 /// This is because we can't combine the polynomials together to be a single polynomial, if we do that, we would get a polynomial with powers greater than one.
 /// Hence we won't be able to use the polynomial as a MultilinearPolynomial that is evaluated over the boolean hypercube. We might be forced to work with a 3HC structure, which we are avoiding.
 pub fn generate_round_univariate<F: PrimeField>(current_polynomial: &SumPolynomial<F>) -> Vec<F> {
