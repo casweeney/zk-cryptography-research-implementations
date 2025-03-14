@@ -42,7 +42,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
     // handling layer 0 computation
     let mut w0_polynomial = Circuit::w_i_polynomial(&circuit_evaluation, 0);
 
-    // Checking to make sure the length of the output array from the circuit evaluation is not 1 
+    // Checking to make sure the length of the output array from the circuit evaluation is not equal to 1 
     // if the length is 1, we pad it with a 0, so that it can represent a proper polynomial in evaluation form
     if w0_polynomial.evaluated_values.len() == 1 {
         let mut w0_padded_with_zero = w0_polynomial.evaluated_values;
@@ -56,7 +56,7 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
 
 
     // This is where the proving begins: //
-    // We are checking if the layer index to determine how we handle proving
+    // We are checking the layer index, to determine how we handle proving
     // For layer_index 0, we perform a normal partial evaluation on the add_i_abc and mul_i_abc to remove the variable "a"
     // But for subsequent layers > 0, we use the alpha beta folding to compute compute add_i_bc and mul_i_bc, removing "a" from add_i_abc and mul_i_abc
     for layer_index in 0..circuit.layers.len() {
@@ -78,8 +78,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
             )
         };
 
-        // The wb_poly and wc_poly are the w-polynomials that makes up the input of the current layer, ...
-        // ... which means, it comes from the layer below the current layer
+        // The wb_poly and wc_poly are the w-polynomials that makes up the inputs to the gates of the current layer, ...
+        // ... which means, it comes from the layer below the current layer.
         // Layer in this case is the layers that makes up the circuit evaluations
         // To get the layer below the current layer, we add 1 to the current layer index
         let wb_poly = Circuit::w_i_polynomial(&circuit_evaluation, layer_index + 1);
@@ -87,7 +87,8 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
 
         // The f(b,c) polynomial is what we need to perform sumcheck: because we now have a sumcheck problem
         // A sumcheck problem is when we have a claimed_sum, and a polynomial that when evaluated we get the claim
-        // We are trying to prove that the f(b,c) polynomial using the w-polynomials of the layer below will equal the claimed_sum when evaluated
+        // We are trying to prove that the f(b,c) polynomial, when computed using the w-polynomials of the layer below and evaluated,
+        // will be equal to the claimed_sum 
         let fbc_polynomial = compute_fbc_polynomial(add_i_bc, mul_i_bc, &wb_poly, &wc_poly);
 
         // The sumcheck protocol here is specially implemented for GKR. => It takes in the f(b,c) polynomial, the claimed sum and the transcript
@@ -96,11 +97,11 @@ pub fn prove<F: PrimeField>(circuit: &mut Circuit<F>, inputs: &[F]) -> Proof<F> 
         layer_proofs.push(sumcheck_proof.clone());
         
         // In the following code blocks, we are sending the evaluation of the w-polynomials (wb and wc)
-        // Since the verifier doesn't need to know the w-polynomials of the subsequent evaluation layers of the circuit
-        // Because he knows the output and the input, but the verifier still needs verify these layers, so that prover will send the wb and wc evaluation
-        // of the layers between the output and input of the circuit
+        // Since the verifier doesn't need to know the w-polynomials of the subsequent evaluation layers of the circuit ...
+        // ... because the verifier knows the output and the input, but the verifier still needs to verify these layers, 
+        // the prover will send the wb and wc evaluation of the layers between the output and input of the circuit
         
-        // We are also ensuring that the prover doesn't send the evaluation of the input layer, since the verifier knows the input
+        // We are also ensuring that the prover doesn't send the evaluation of the input layer, because the verifier knows the input
         // that is why we are only evaluating w-polynomials for circuit_layer_length - 1
         if layer_index < circuit.layers.len() - 1 {
             let sumcheck_challenges = sumcheck_proof.random_challenges;
@@ -174,7 +175,7 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
 
         // This is where the verifier is using the evaluation of the w-polynomials (wb and wc) received from the prove
         // The verifier is also making sure the he is not using the evaluated inputs, because he knows the input
-        // If the prover wasn't honest, the verifier's computing will fail, because he will be using the input he knows and not values received from the prover
+        // If the prover wasn't honest, the verifier's computation will fail, because he will be using the input he knows and not values received from the prover
         let (wb_evaluation, wc_evaluation) = if layer_index < circuit.layers.len() - 1 {
             (proof.wb_evaluations[layer_index], proof.wc_evaluations[layer_index])
         } else {
