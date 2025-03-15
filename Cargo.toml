@@ -1,3 +1,3 @@
 [workspace]
 
-members = [ "circuit", "fibonacci_evaluation", "gkr", "multilinear_kzg", "polynomials","shamir_secret_sharing", "sumcheck_protocol", "transcripts"]
+members = [ "circuit", "fft", "fibonacci_evaluation", "gkr", "multilinear_kzg", "polynomials","shamir_secret_sharing", "sumcheck_protocol", "transcripts"]

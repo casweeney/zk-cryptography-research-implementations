@@ -266,6 +266,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "fft"
+version = "0.1.0"
+
+[[package]]
 name = "fibonacci_evaluation"
 version = "0.1.0"
 dependencies = [
