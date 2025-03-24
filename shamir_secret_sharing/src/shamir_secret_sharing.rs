@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::dense_univariate::DenseUnivariatePolynomial;
 
 // if f(0) = 17 => (0,17) Our secret is 17
 // We can take 17 as a y_value
@@ -26,7 +26,7 @@ pub fn shares<F: PrimeField>(secret: F, threshold: u64, number_shares: u64) -> V
     }
 
     // using the y_values as coefficients to create a polynomial
-    let polynomial = DensedUnivariatePolynomial::new(&y_values);
+    let polynomial = DenseUnivariatePolynomial::new(&y_values);
 
     for i in 1..number_shares {
         shares.push((F::from(i), polynomial.evaluate(F::from(i))))
@@ -44,7 +44,7 @@ pub fn recover_secret<F: PrimeField>(shares: Vec<(F, F)>) -> F {
         y_values.push(i.1);
     }
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
+    let polynomial = DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
     let secret = polynomial.evaluate(F::from(0));
 

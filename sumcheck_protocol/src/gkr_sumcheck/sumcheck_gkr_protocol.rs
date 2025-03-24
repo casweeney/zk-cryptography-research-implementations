@@ -1,6 +1,6 @@
 use ark_ff::{BigInteger, PrimeField};
 use polynomials::composed::sum_polynomial::SumPolynomial;
-use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::dense_univariate::DenseUnivariatePolynomial;
 use transcripts::fiat_shamir::{
     fiat_shamir_transcript::Transcript, interface::FiatShamirTranscriptInterface,
 };
@@ -8,7 +8,7 @@ use transcripts::fiat_shamir::{
 #[derive(Clone, Debug)]
 pub struct SumcheckProverProof<F: PrimeField> {
     pub claimed_sum: F,
-    pub round_univariate_polynomials: Vec<DensedUnivariatePolynomial<F>>,
+    pub round_univariate_polynomials: Vec<DenseUnivariatePolynomial<F>>,
     pub random_challenges: Vec<F>,
 }
 
@@ -47,7 +47,7 @@ pub fn prove<F: PrimeField>(
             .map(|i| F::from(i as u64))
             .collect();
         let univariate_poly =
-            DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &univariate);
+            DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &univariate);
 
         transcript.append(&univariate_to_bytes(&univariate_poly.coefficients));
         round_univariate_polynomials.push(univariate_poly);
