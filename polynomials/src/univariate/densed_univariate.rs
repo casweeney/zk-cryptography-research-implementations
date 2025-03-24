@@ -6,9 +6,9 @@ pub struct DensedUnivariatePolynomial<F: PrimeField> {
 }
 
 impl<F: PrimeField> DensedUnivariatePolynomial<F> {
-    pub fn new(coeffs: &Vec<F>) -> Self {
+    pub fn new(coefficients: &Vec<F>) -> Self {
         Self {
-            coefficients: coeffs.to_vec(),
+            coefficients: coefficients.to_vec(),
         }
     }
 
@@ -16,13 +16,17 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
         self.coefficients.len() as u32 - 1
     }
 
-    pub fn evaluate(&self, value: F) -> F {
+    /// In this evaluate function, we are manually tracking and updating the index: using the index_counter variable
+    /// This is a dense representation of a univariate polynomial: where the polynomial is blown up
+    /// Given a polynomial => 2x^2 + 3x + 1 => 1 + 3x + 2x^2 => the dense representation is => coefficient: [1, 3, 2], power: [0, 1, 2]
+    /// We only take in the coefficients, then we use the loop index to represent the powers.
+    pub fn evaluate_(&self, value: F) -> F {
         // using index as the exponent of the coefficients
         let mut index_counter = 0;
         let mut result = F::zero();
 
-        for coeff in self.coefficients.iter() {
-            result += *coeff * value.pow([index_counter]);
+        for coefficient in self.coefficients.iter() {
+            result += *coefficient * value.pow([index_counter]);
 
             index_counter += 1;
         }
@@ -30,11 +34,33 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
         result
     }
 
+    // Here we are getting the loop index from the enumerate() method
     pub fn evaluate_advanced(&self, value: F) -> F {
         let mut result = F::zero();
 
         for (exp, coeff) in self.coefficients.iter().enumerate() {
             result += *coeff * value.pow([exp as u64]);
+        }
+
+        result
+    }
+
+    /// The is the lastly implemented evaluate function, it is considered to be more optimized and faster
+    /// because the two implementations above uses pow([index_counter]) method which requires creating an array for each exponentiation
+    /// and potentially does more complex calculation internally
+    /// In this implementation we perform a single multiplication per term to calculate the next power, which avoids overhead creation of arrays
+    /// and calling the pow() method
+    /// Reduces the total number of multiplication from O(n^2) to O(n)
+    /// Given a polynomial => 2x^2 + 3x + 1 => 1 + 3x + 2x^2 => the dense representation is => coefficient: [1, 3, 2], power: [0, 1, 2]
+    /// (1 * 1) + (3 * (1 * 2)) + (2 * (1 * 2 * 2)) => Notice that 2 repeats based on the power: [0, 1, 2]
+    pub fn evaluate(&self, value: F) -> F {
+        let mut result = F::zero();
+        let mut current_power = F::one();
+
+        for coefficient in self.coefficients.iter() {
+            result += *coefficient * current_power;
+
+            current_power = current_power * value;
         }
 
         result
