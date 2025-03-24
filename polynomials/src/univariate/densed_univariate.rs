@@ -47,7 +47,7 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
 
     /// The is the lastly implemented evaluate function, it is considered to be more optimized and faster
     /// because the two implementations above uses pow([index_counter]) method which requires creating an array for each exponentiation
-    /// and potentially does more complex calculation internally
+    /// and potentially does more complex calculation internally.
     /// In this implementation we perform a single multiplication per term to calculate the next power, which avoids overhead creation of arrays
     /// and calling the pow() method
     /// Reduces the total number of multiplication from O(n^2) to O(n)
