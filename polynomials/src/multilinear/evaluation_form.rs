@@ -10,6 +10,8 @@ pub struct MultilinearPolynomial<F: PrimeField> {
 
 impl<F: PrimeField> MultilinearPolynomial<F> {
     pub fn new(evaluated_values: &[F]) -> Self {
+        assert!(evaluated_values.len().is_power_of_two(), "Evaluated values must be a power of 2");
+
         Self {
             evaluated_values: evaluated_values.to_vec(),
         }
