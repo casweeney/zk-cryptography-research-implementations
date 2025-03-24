@@ -10,6 +10,8 @@ pub struct MultilinearPolynomial<F: PrimeField> {
 
 impl<F: PrimeField> MultilinearPolynomial<F> {
     pub fn new(evaluated_values: &[F]) -> Self {
+        assert!(evaluated_values.len().is_power_of_two(), "Evaluated values must be a power of 2");
+
         Self {
             evaluated_values: evaluated_values.to_vec(),
         }
@@ -126,7 +128,7 @@ impl<F: PrimeField> MultilinearPolynomial<F> {
     ) -> MultilinearPolynomial<F> {
         assert!(
             w_b.evaluated_values.len() == w_c.evaluated_values.len(),
-            "different polynomial length"
+            "Different polynomial length"
         );
 
         let mut mul_result = Vec::new();
@@ -165,6 +167,13 @@ impl<F: PrimeField> MultilinearPolynomial<F> {
 mod tests {
     use super::*;
     use ark_bn254::Fq;
+
+    #[test]
+    #[should_panic(expected = "Evaluated values must be a power of 2")]
+    fn test_new_accepts_only_powers_of_2_values() {
+        let evaluated_values = vec![Fq::from(0), Fq::from(0), Fq::from(3), Fq::from(8), Fq::from(0), Fq::from(0)];
+        MultilinearPolynomial::new(&evaluated_values);
+    }
 
     #[test]
     fn test_partial_evaluate() {
@@ -258,7 +267,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "different polynomial length")]
+    #[should_panic(expected = "Different polynomial length")]
     fn test_polynomial_tensor_mul_different_lengths() {
         let w_b = MultilinearPolynomial::new(&vec![Fq::from(2), Fq::from(3)]);
         let w_c = MultilinearPolynomial::new(&vec![Fq::from(4)]); // Different length
