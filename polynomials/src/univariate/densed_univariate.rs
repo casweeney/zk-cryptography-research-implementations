@@ -52,6 +52,7 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
     /// and calling the pow() method
     /// Reduces the total number of multiplication from O(n^2) to O(n)
     /// Given a polynomial => 2x^2 + 3x + 1 => 1 + 3x + 2x^2 => the dense representation is => coefficient: [1, 3, 2], power: [0, 1, 2]
+    /// If value = 2
     /// (1 * 1) + (3 * (1 * 2)) + (2 * (1 * 2 * 2)) => Notice that 2 repeats based on the power: [0, 1, 2]
     pub fn evaluate(&self, value: F) -> F {
         let mut result = F::zero();
