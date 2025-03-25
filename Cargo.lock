@@ -484,6 +484,7 @@ dependencies = [
  "ark-ec",
  "ark-ff",
  "circuit",
+ "criterion",
  "field-tracker",
  "multilinear_kzg",
  "polynomials",

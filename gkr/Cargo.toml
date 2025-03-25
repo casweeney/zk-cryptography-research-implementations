@@ -16,3 +16,12 @@ ark-bls12-381 = "0.5.0"
 
 [dev-dependencies]
 field-tracker = { git = "https://github.com/sublinearlabs/field-tracker", branch = "main" }
+criterion = "0.5.1"
+
+[[bench]]
+name = "succinct_gkr_benchmark"
+harness = false
+
+[[bench]]
+name = "gkr_protocol_benchmark"
+harness = false
