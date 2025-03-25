@@ -238,8 +238,10 @@ pub fn verify<F: PrimeField>(circuit: &mut Circuit<F>, proof: Proof<F>, inputs: 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bn254::Fq;
+    // use ark_bn254::Fq;
     use circuit::arithmetic_circuit::{Gate, Layer, Operator};
+    use field_tracker::{Ft, print_summary};
+    type Fq = Ft!(ark_bn254::Fq);
 
     #[test]
     pub fn test_gkr_protocol1() {
@@ -256,6 +258,8 @@ mod tests {
         let proof = prove(&mut circuit, &inputs);
 
         assert_eq!(verify(&mut circuit, proof, &inputs), true);
+
+        print_summary!();
     }
 
     #[test]
@@ -290,5 +294,7 @@ mod tests {
         let proof = prove(&mut circuit, &inputs);
 
         assert_eq!(verify(&mut circuit, proof, &inputs), true);
+
+        print_summary!();
     }
 }
