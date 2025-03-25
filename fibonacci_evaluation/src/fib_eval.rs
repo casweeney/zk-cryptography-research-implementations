@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::dense_univariate::DenseUnivariatePolynomial;
 
 pub fn evaluation<F: PrimeField>(evaluation_value: F) -> F {
     let x_values = vec![
@@ -21,7 +21,7 @@ pub fn evaluation<F: PrimeField>(evaluation_value: F) -> F {
         F::from(21),
     ];
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
+    let polynomial = DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
     polynomial.evaluate(evaluation_value)
 }

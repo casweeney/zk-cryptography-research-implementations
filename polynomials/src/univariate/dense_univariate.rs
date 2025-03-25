@@ -1,11 +1,11 @@
 use ark_ff::PrimeField;
 
 #[derive(Clone, Debug)]
-pub struct DensedUnivariatePolynomial<F: PrimeField> {
+pub struct DenseUnivariatePolynomial<F: PrimeField> {
     pub coefficients: Vec<F>,
 }
 
-impl<F: PrimeField> DensedUnivariatePolynomial<F> {
+impl<F: PrimeField> DenseUnivariatePolynomial<F> {
     pub fn new(coefficients: &Vec<F>) -> Self {
         Self {
             coefficients: coefficients.to_vec(),
@@ -74,7 +74,7 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
     pub fn lagrange_interpolate(
         x_values: &Vec<F>,
         y_values: &Vec<F>,
-    ) -> DensedUnivariatePolynomial<F> {
+    ) -> DenseUnivariatePolynomial<F> {
         let mut final_interpolated_polynomial = vec![F::zero()]; //any value added to zero, gives you that value
                                                                  // let mut x_values: Vec<F> = Vec::new();
 
@@ -92,7 +92,7 @@ impl<F: PrimeField> DensedUnivariatePolynomial<F> {
                 add_polynomials(final_interpolated_polynomial, current_polynomial)
         }
 
-        DensedUnivariatePolynomial {
+        DenseUnivariatePolynomial {
             coefficients: final_interpolated_polynomial,
         }
     }
@@ -115,8 +115,8 @@ fn lagrange_basis<F: PrimeField>(
     }
 
     // denominator
-    let univariate_poly: DensedUnivariatePolynomial<F> =
-        DensedUnivariatePolynomial::new(&numerator);
+    let univariate_poly: DenseUnivariatePolynomial<F> =
+        DenseUnivariatePolynomial::new(&numerator);
     let denominator = univariate_poly.evaluate(*focus_x_point);
 
     // numerator/denominator is the same this as (1/denominator) * numerator
@@ -186,7 +186,7 @@ mod tests {
     use super::*;
     use ark_bn254::Fq;
 
-    fn test_setup() -> DensedUnivariatePolynomial<Fq> {
+    fn test_setup() -> DenseUnivariatePolynomial<Fq> {
         let set_of_points = vec![
             Fq::from(0),
             Fq::from(0),
@@ -197,7 +197,7 @@ mod tests {
             Fq::from(0),
             Fq::from(3),
         ];
-        let polynomial = DensedUnivariatePolynomial::new(&set_of_points);
+        let polynomial = DenseUnivariatePolynomial::new(&set_of_points);
 
         polynomial
     }
@@ -255,7 +255,7 @@ mod tests {
         let y_values = vec![Fq::from(2), Fq::from(4), Fq::from(10)];
 
         assert_eq!(
-            DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values).coefficients,
+            DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values).coefficients,
             vec![Fq::from(2), Fq::from(0), Fq::from(2)]
         );
     }

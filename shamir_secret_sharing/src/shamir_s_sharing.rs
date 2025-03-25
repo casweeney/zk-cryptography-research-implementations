@@ -1,5 +1,5 @@
 use ark_ff::PrimeField;
-use polynomials::univariate::densed_univariate::DensedUnivariatePolynomial;
+use polynomials::univariate::dense_univariate::DenseUnivariatePolynomial;
 
 // In this implementation, given (0, 17) as the secret, evaluated at 0
 // we generated random x_values and y_values using the threshold
@@ -28,7 +28,7 @@ pub fn s_shares<F: PrimeField>(
             y_values.push(F::rand(&mut rng));
         }
 
-        let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
+        let polynomial = DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
         // Checking if we have a valid polynomial of the correct degree
         // If we do, the loop breaks, else the loop continues and generates a new polynomial with new random points
@@ -52,7 +52,7 @@ pub fn s_recover_secret<F: PrimeField>(shares: Vec<(F, F)>, password: u64) -> F 
         y_values.push(i.1);
     }
 
-    let polynomial = DensedUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
+    let polynomial = DenseUnivariatePolynomial::lagrange_interpolate(&x_values, &y_values);
 
     let secret = polynomial.evaluate(F::from(password));
 

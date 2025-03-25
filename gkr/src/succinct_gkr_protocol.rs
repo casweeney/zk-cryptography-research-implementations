@@ -286,9 +286,11 @@ pub fn verify_succinct<F: PrimeField, P: Pairing>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ark_bls12_381::{Bls12_381, Fr};
+    use ark_bls12_381::Bls12_381;
     use circuit::arithmetic_circuit::{Gate, Layer, Operator};
     use multilinear_kzg::trusted_setup::generate_values_for_tau;
+    use field_tracker::{Ft, print_summary};
+    type Fr = Ft!(ark_bls12_381::Fr);
 
     #[test]
     pub fn test_succinct_gkr_protocol1() {
@@ -311,6 +313,8 @@ mod tests {
             verify_succinct(&mut circuit, succinct_proof, &trusted_setup),
             true
         );
+
+        print_summary!();
     }
 
     #[test]
@@ -351,6 +355,8 @@ mod tests {
             verify_succinct(&mut circuit, succinct_proof, &trusted_setup),
             true
         );
+
+        print_summary!();
     }
 
     #[test]
@@ -394,5 +400,7 @@ mod tests {
             verify_succinct(&mut circuit, succinct_proof, &trusted_setup),
             true
         );
+
+        print_summary!();
     }
 }

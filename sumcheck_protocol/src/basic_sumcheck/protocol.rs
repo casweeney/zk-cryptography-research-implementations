@@ -2,7 +2,9 @@
 mod tests {
     use crate::basic_sumcheck::prover::Prover;
     use crate::basic_sumcheck::verifier::Verifier;
-    use ark_bls12_381::Fr;
+    // use ark_bls12_381::Fr;
+    use field_tracker::{Ft, print_summary};
+    type Fr = Ft!(ark_bls12_381::Fr);
 
     #[test]
     fn test_sumcheck_protocol_init() {
@@ -25,15 +27,20 @@ mod tests {
 
     #[test]
     fn test_sumcheck_protocol_prove_and_verify() {
+        // let polynomial_evaluated_values = vec![
+        //     Fr::from(0),
+        //     Fr::from(0),
+        //     Fr::from(2),
+        //     Fr::from(7),
+        //     Fr::from(3),
+        //     Fr::from(3),
+        //     Fr::from(6),
+        //     Fr::from(11),
+        // ];
+
+        // Created a large array to test benchmarking
         let polynomial_evaluated_values = vec![
-            Fr::from(0),
-            Fr::from(0),
-            Fr::from(2),
-            Fr::from(7),
-            Fr::from(3),
-            Fr::from(3),
-            Fr::from(6),
-            Fr::from(11),
+            Fr::from(3); 1 << 20
         ];
 
         let mut prover = Prover::init(&polynomial_evaluated_values);
@@ -43,6 +50,9 @@ mod tests {
         assert_eq!(verifier.is_initialized, true);
 
         assert_eq!(verifier.verify(proof), true);
+
+        // print benchmark summary
+        print_summary!();
     }
 
     #[test]
