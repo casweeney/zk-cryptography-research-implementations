@@ -13,3 +13,12 @@ rand = "0.8.5"
 
 [dev-dependencies]
 field-tracker = { git = "https://github.com/sublinearlabs/field-tracker", branch = "main" }
+criterion = "0.5.1"
+
+[[bench]]
+name = "basic_sumcheck_benchmark"
+harness = false
+
+[[bench]]
+name = "gkr_sumcheck_benchmark"
+harness = false
